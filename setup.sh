@@ -17,13 +17,11 @@ DRY_RUN=false
 PYTHON_VERSION=""
 NON_INTERACTIVE=false
 # Latest stable versions as of 2025
-declare -A PYTHON_VERSIONS=(
-    ["3.13"]="3.13.6"
-    ["3.12"]="3.12.11"
-    ["3.11"]="3.11.13"
-    ["3.10"]="3.10.18"
-    ["3.9"]="3.9.22"
-)
+PYTHON_313="3.13.6"
+PYTHON_312="3.12.11"  
+PYTHON_311="3.11.13"
+PYTHON_310="3.10.18"
+PYTHON_39="3.9.22"
 CURRENT_STEP=0
 TOTAL_STEPS=13
 
@@ -143,22 +141,22 @@ show_help() {
 select_python_version() {
     echo
     print_info "Select Python version to install:"
-    echo "  1) Python ${PYTHON_VERSIONS["3.13"]} (recommended - active development)"
-    echo "  2) Python ${PYTHON_VERSIONS["3.12"]} (stable - security fixes only)"
-    echo "  3) Python ${PYTHON_VERSIONS["3.11"]} (stable - security fixes only)"
-    echo "  4) Python ${PYTHON_VERSIONS["3.10"]} (stable - security fixes only)"
-    echo "  5) Python ${PYTHON_VERSIONS["3.9"]} (stable - security fixes only)"
+    echo "  1) Python $PYTHON_313 (recommended - active development)"
+    echo "  2) Python $PYTHON_312 (stable - security fixes only)"
+    echo "  3) Python $PYTHON_311 (stable - security fixes only)"
+    echo "  4) Python $PYTHON_310 (stable - security fixes only)"
+    echo "  5) Python $PYTHON_39 (stable - security fixes only)"
     echo "  6) Custom version (enter manually)"
     echo
     
     while true; do
         read -r -p "Choose option [1-6]: " choice
         case $choice in
-            1) PYTHON_VERSION="${PYTHON_VERSIONS["3.13"]}"; break ;;
-            2) PYTHON_VERSION="${PYTHON_VERSIONS["3.12"]}"; break ;;
-            3) PYTHON_VERSION="${PYTHON_VERSIONS["3.11"]}"; break ;;
-            4) PYTHON_VERSION="${PYTHON_VERSIONS["3.10"]}"; break ;;
-            5) PYTHON_VERSION="${PYTHON_VERSIONS["3.9"]}"; break ;;
+            1) PYTHON_VERSION="$PYTHON_313"; break ;;
+            2) PYTHON_VERSION="$PYTHON_312"; break ;;
+            3) PYTHON_VERSION="$PYTHON_311"; break ;;
+            4) PYTHON_VERSION="$PYTHON_310"; break ;;
+            5) PYTHON_VERSION="$PYTHON_39"; break ;;
             6) 
                 read -r -p "Enter Python version (e.g., 3.11.5): " custom_version
                 if [[ -n "$custom_version" ]]; then
@@ -191,7 +189,7 @@ collect_user_info() {
         
         # Set default Python version if not specified
         if [[ -z "$PYTHON_VERSION" ]]; then
-            PYTHON_VERSION="${PYTHON_VERSIONS["3.13"]}"
+            PYTHON_VERSION="$PYTHON_313"
         fi
         
         print_info "Non-interactive mode - using provided configuration"
@@ -226,7 +224,7 @@ collect_user_info() {
         fi
         
         echo
-        if [[ "$INSTALL_WORK_TOOLS" == "false" ]] && [[ "$1" != "--no-work-tools" ]]; then
+        if [[ "$INSTALL_WORK_TOOLS" == "false" ]]; then
             read -p "Install work tools (1Password, Slack, Zoom, etc.)? [y/N]: " -n 1 -r
             echo
             if [[ $REPLY =~ ^[Yy]$ ]]; then
