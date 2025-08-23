@@ -23,7 +23,7 @@ PYTHON_311="3.11.13"
 PYTHON_310="3.10.18"
 PYTHON_39="3.9.22"
 CURRENT_STEP=0
-TOTAL_STEPS=13
+TOTAL_STEPS=14
 
 # Print colored output
 print_info() {
@@ -316,7 +316,7 @@ install_core_tools() {
     print_step "Installing core development tools"
     
     local cask_apps=("iterm2" "font-source-code-pro" "visual-studio-code")
-    local cli_tools=("zsh" "git" "hugo" "pyenv" "xz" "dockutil" "node")
+    local cli_tools=("zsh" "git" "hugo" "pyenv" "xz" "dockutil" "node" "gh")
     
     if [[ "$DRY_RUN" == "true" ]]; then
         print_info "[DRY RUN] Would install cask applications: ${cask_apps[*]}"
@@ -363,6 +363,110 @@ install_claude_code() {
             return 1
         fi
         print_success "Claude Code CLI installed"
+    fi
+}
+
+# Configure Claude Code with templates
+configure_claude_code() {
+    print_step "Configuring Claude Code with development templates"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would create Claude Code configuration templates"
+        return 0
+    fi
+    
+    # Create user-level Claude config directory
+    mkdir -p ~/.claude
+    
+    # Create default settings.json if it doesn't exist
+    if [ ! -f ~/.claude/settings.json ]; then
+        cat > ~/.claude/settings.json << 'EOF'
+{
+  "permissions": {
+    "allowExecutableCreation": true,
+    "allowFileCreation": true,
+    "allowFileEditing": true,
+    "allowDirectoryCreation": true,
+    "allowTerminalExecution": true
+  },
+  "editor": {
+    "rulers": [70, 100],
+    "tabSize": 2,
+    "insertFinalNewline": true,
+    "trimTrailingWhitespace": true
+  },
+  "development": {
+    "enableGitIntegration": true,
+    "enableShellCompletion": true,
+    "defaultLanguage": "typescript"
+  },
+  "hooks": {
+    "onProjectOpen": "echo 'Claude Code ready for development'",
+    "beforeEdit": "echo 'Starting edit session'"
+  }
+}
+EOF
+        print_success "Created Claude Code user settings"
+    else
+        print_success "Claude Code user settings already exist"
+    fi
+    
+    # Create a project template CLAUDE.md
+    if [ ! -f ~/CLAUDE_PROJECT_TEMPLATE.md ]; then
+        cat > ~/CLAUDE_PROJECT_TEMPLATE.md << 'EOF'
+# Claude Development Guide
+
+## Project Overview
+Brief description of what this project does and its main purpose.
+
+## Code Style Guidelines
+- Use 2-space indentation for JavaScript/TypeScript
+- Use 4-space indentation for Python
+- Maximum line length: 100 characters
+- Comments should explain "why", not "what"
+
+## Architecture Patterns
+- Follow existing project structure
+- Use TypeScript for type safety
+- Implement proper error handling
+- Write unit tests for new features
+
+## Development Workflow
+1. Create feature branches from `main`
+2. Write tests first (TDD approach)
+3. Implement features with proper documentation
+4. Create pull requests for code review
+
+## Testing Strategy
+- Unit tests for all business logic
+- Integration tests for API endpoints
+- End-to-end tests for critical user flows
+
+## Deployment Notes
+- Environment-specific configurations
+- Database migration requirements
+- Any special deployment considerations
+
+## Useful Commands
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+Copy this template to your project root as `CLAUDE.md` and customize it for your specific project.
+EOF
+        print_success "Created Claude Code project template at ~/CLAUDE_PROJECT_TEMPLATE.md"
+    else
+        print_success "Claude Code project template already exists"
     fi
 }
 
@@ -556,7 +660,7 @@ configure_vscode_settings() {
     print_step "Configuring VS Code settings"
     
     if [[ "$DRY_RUN" == "true" ]]; then
-        print_info "[DRY RUN] Would configure VS Code with rulers, themes, and Python settings"
+        print_info "[DRY RUN] Would configure VS Code with rulers, themes, Python settings, and Claude Code optimizations"
         return 0
     fi
     
@@ -570,7 +674,7 @@ configure_vscode_settings() {
         print_info "Backed up existing VS Code settings"
     fi
     
-    # Create settings.json with common preferences
+    # Create settings.json with common preferences optimized for Claude Code
     cat > "$vscode_dir/settings.json" << EOF
 {
     "editor.rulers": [70, 100],
@@ -599,7 +703,32 @@ configure_vscode_settings() {
     "editor.minimap.enabled": true,
     "editor.lineNumbers": "on",
     "editor.renderWhitespace": "boundary",
-    "workbench.colorTheme": "Default Dark Modern"
+    "workbench.colorTheme": "Default Dark Modern",
+    "editor.codeActionsOnSave": {
+        "source.fixAll": true,
+        "source.organizeImports": true
+    },
+    "editor.suggestSelection": "first",
+    "editor.acceptSuggestionOnCommitCharacter": false,
+    "editor.acceptSuggestionOnEnter": "on",
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": true
+    },
+    "editor.parameterHints.enabled": true,
+    "editor.hover.enabled": true,
+    "editor.lightbulb.enabled": true,
+    "workbench.editor.enablePreview": false,
+    "workbench.editor.enablePreviewFromQuickOpen": false,
+    "files.associations": {
+        "CLAUDE.md": "markdown",
+        "*.claude": "markdown"
+    },
+    "markdown.validate.enabled": true,
+    "markdown.preview.breaks": true,
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.commandsToSkipShell": ["workbench.action.togglePanel"]
 }
 EOF
     
@@ -771,6 +900,7 @@ main() {
     install_homebrew
     install_core_tools
     install_claude_code
+    configure_claude_code
     install_oh_my_zsh
     configure_shell
     install_core_apps

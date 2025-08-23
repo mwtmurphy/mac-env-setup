@@ -17,8 +17,9 @@ This repository contains an automated setup script for configuring a new Mac dev
 
 The `setup.sh` script will automatically:
 - Install Xcode Command Line Tools and Homebrew
-- Install core development tools (iTerm2, VS Code, Git, Python, etc.)
+- Install core development tools (iTerm2, VS Code, Git, Python, GitHub CLI, etc.)
 - Install Claude Code CLI for AI-powered development
+- Configure Claude Code with development templates and settings
 - Configure your shell with Oh My Zsh and custom settings
 - Install essential applications via Homebrew
 - Set up Python environment with pyenv and Poetry
@@ -40,7 +41,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # Install core applications
 brew install --cask iterm2 font-source-code-pro visual-studio-code
-brew install zsh git hugo pyenv xz node
+brew install zsh git hugo pyenv xz node gh
 
 # Install Oh My Zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
@@ -50,6 +51,39 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/mas
 ```bash
 # Install Claude Code CLI via npm
 npm install -g @anthropic-ai/claude-code
+```
+
+### Claude Code Configuration
+```bash
+# Create configuration directory
+mkdir -p ~/.claude
+
+# Create user settings with development-friendly defaults
+cat > ~/.claude/settings.json << 'EOF'
+{
+  "permissions": {
+    "allowExecutableCreation": true,
+    "allowFileCreation": true,
+    "allowFileEditing": true,
+    "allowDirectoryCreation": true,
+    "allowTerminalExecution": true
+  },
+  "editor": {
+    "rulers": [70, 100],
+    "tabSize": 2,
+    "insertFinalNewline": true,
+    "trimTrailingWhitespace": true
+  },
+  "development": {
+    "enableGitIntegration": true,
+    "enableShellCompletion": true,
+    "defaultLanguage": "typescript"
+  }
+}
+EOF
+
+# Create project template for CLAUDE.md files
+cp ~/CLAUDE_PROJECT_TEMPLATE.md ./CLAUDE.md  # Copy to each project
 ```
 
 ### Shell Configuration
@@ -157,10 +191,17 @@ After `./setup.sh` completes successfully, you'll need to manually configure the
 
 ### 4. Development Setup
 - **GitHub** → Add the SSH key to your GitHub account (already copied to clipboard by the script)
-- **Claude Code** → Run `claude login` to authenticate with your Anthropic account
-- **VS Code** → Settings:
-  - Set rulers at columns 70 (comments) and 100 (code)
-  - Open vscode-icons extension and set as file icon theme
+- **Claude Code** → Complete authentication and GitHub integration:
+  - Run `claude login` to authenticate with your Anthropic account
+  - For GitHub integration: `claude /install-github-app` (optional but recommended)
+  - This enables Claude to respond to @mentions in GitHub PRs and issues
+  - Configure repository secrets with your Anthropic API key if using GitHub Actions
+  - Copy `~/CLAUDE_PROJECT_TEMPLATE.md` to your project root as `CLAUDE.md` and customize
+- **VS Code** → Enhanced for Claude Code development:
+  - Settings automatically configured with Claude Code optimizations
+  - File associations set up for CLAUDE.md files
+  - Enhanced IntelliSense and code actions enabled
+  - Shell integration configured for better terminal experience
 - **Google Cloud** (if work tools installed) → Run: `gcloud auth application-default login`
 
 ### 5. Optional Customization
