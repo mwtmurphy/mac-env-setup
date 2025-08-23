@@ -411,60 +411,19 @@ EOF
         print_success "Claude Code user settings already exist"
     fi
     
-    # Create a project template CLAUDE.md
+    # Copy the project template CLAUDE_PROJECT_TEMPLATE.md to user's home directory
     if [ ! -f ~/CLAUDE_PROJECT_TEMPLATE.md ]; then
-        cat > ~/CLAUDE_PROJECT_TEMPLATE.md << 'EOF'
+        if [ -f "$(dirname "$0")/CLAUDE_PROJECT_TEMPLATE.md" ]; then
+            cp "$(dirname "$0")/CLAUDE_PROJECT_TEMPLATE.md" ~/CLAUDE_PROJECT_TEMPLATE.md
+            print_success "Created Claude Code project template at ~/CLAUDE_PROJECT_TEMPLATE.md"
+        else
+            print_warning "CLAUDE_PROJECT_TEMPLATE.md not found in script directory, creating basic template"
+            cat > ~/CLAUDE_PROJECT_TEMPLATE.md << 'EOF'
 # Claude Development Guide
 
-## Project Overview
-Brief description of what this project does and its main purpose.
-
-## Code Style Guidelines
-- Use 2-space indentation for JavaScript/TypeScript
-- Use 4-space indentation for Python
-- Maximum line length: 100 characters
-- Comments should explain "why", not "what"
-
-## Architecture Patterns
-- Follow existing project structure
-- Use TypeScript for type safety
-- Implement proper error handling
-- Write unit tests for new features
-
-## Development Workflow
-1. Create feature branches from `main`
-2. Write tests first (TDD approach)
-3. Implement features with proper documentation
-4. Create pull requests for code review
-
-## Testing Strategy
-- Unit tests for all business logic
-- Integration tests for API endpoints
-- End-to-end tests for critical user flows
-
-## Deployment Notes
-- Environment-specific configurations
-- Database migration requirements
-- Any special deployment considerations
-
-## Useful Commands
-```bash
-# Install dependencies
-npm install
-
-# Run tests
-npm test
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-```
-
-Copy this template to your project root as `CLAUDE.md` and customize it for your specific project.
+Copy the CLAUDE_PROJECT_TEMPLATE.md from the mac-env-setup repository to get the full Python/SQL focused template.
 EOF
-        print_success "Created Claude Code project template at ~/CLAUDE_PROJECT_TEMPLATE.md"
+        fi
     else
         print_success "Claude Code project template already exists"
     fi
