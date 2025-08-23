@@ -13,7 +13,15 @@
       "WebFetch(*)",
       "WebSearch(*)",
       "Task(*)",
-      "TodoWrite(*)"
+      "TodoWrite(*)",
+      "Bash(./setup.sh:*)",
+      "Bash(poetry:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(pytest:*)",
+      "Bash(black:*)",
+      "Bash(ruff:*)",
+      "Bash(mypy:*)"
     ]
   },
   "hooks": {

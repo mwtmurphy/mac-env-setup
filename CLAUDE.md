@@ -106,6 +106,31 @@ gh pr create --title "feat: add new feature" --body "Description"
 alembic revision --autogenerate -m "description"  # Create migration
 alembic upgrade head       # Apply migrations
 alembic downgrade -1       # Rollback last migration
+
+# Claude Code automation
+claude                      # Start interactive session (no prompts with settings)
+claude --settings claude-settings-template.json  # Use specific settings file
+claude --model sonnet       # Specify model directly
+claude --permission-mode plan  # Start in plan mode
+```
+
+## Claude Code Settings
+
+This project provides automated Claude Code settings to eliminate interactive prompts:
+
+- **Global settings**: `~/.claude/settings.json` - System-wide configuration with permissions and model selection
+- **Template**: `claude-settings-template.json` - Base template for global user settings
+
+Settings automatically configure:
+- Pre-approved permissions for development tools (git, poetry, pytest, etc.)
+- Default model selection (claude-sonnet-4-20250514)
+- Authentication method (claudeai)
+- Development workflow hooks
+
+To use the settings template globally:
+```bash
+mkdir -p ~/.claude
+cp claude-settings-template.json ~/.claude/settings.json
 ```
 
 Copy this template to your project root as `CLAUDE.md` and customize it for your specific Python/SQL project. Update the sections with your specific framework choices, database schema details, and project-specific commands.
