@@ -6,6 +6,7 @@ on:
     paths:
       - 'setup.sh'
       - 'README.md'
+      - 'templates/**'
       - '.github/workflows/test-setup.yml'
 
 jobs:
@@ -191,3 +192,80 @@ jobs:
             echo "::error::Help flag not working properly"
             exit 1
           fi
+
+  validate-claude-setup:
+    name: Validate Claude Code Configuration
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Claude Code CLI
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          echo "✅ Claude Code CLI installed"
+
+      - name: Create Claude settings directory
+        run: |
+          mkdir -p ~/.claude
+          echo "✅ Claude settings directory created"
+
+      - name: Apply Claude settings template
+        run: |
+          if [ -f "templates/claude-settings-template.json" ]; then
+            cp templates/claude-settings-template.json ~/.claude/settings.json
+            echo "✅ Applied Claude settings template"
+          else
+            echo "::error::Claude settings template not found"
+            exit 1
+          fi
+
+      - name: Validate Claude settings file
+        run: |
+          if [ -f ~/.claude/settings.json ]; then
+            echo "Validating settings file structure..."
+            # Check if it's valid JSON
+            if ! python3 -m json.tool ~/.claude/settings.json > /dev/null 2>&1; then
+              echo "::error::Invalid JSON in settings file"
+              exit 1
+            fi
+            
+            # Check for required permissions section
+            if ! grep -q '"permissions"' ~/.claude/settings.json; then
+              echo "::error::Settings file missing permissions section"
+              exit 1
+            fi
+            
+            echo "✅ Claude settings file is valid"
+          else
+            echo "::error::Claude settings file was not created"
+            exit 1
+          fi
+
+      - name: Run Claude doctor
+        run: |
+          echo "Running claude doctor..."
+          
+          # Run claude doctor and capture output
+          if claude doctor > doctor-output.txt 2>&1; then
+            echo "✅ Claude doctor completed successfully"
+            echo "Doctor output:"
+            cat doctor-output.txt
+          else
+            echo "::error::Claude doctor reported issues"
+            echo "Doctor output:"
+            cat doctor-output.txt
+            exit 1
+          fi
+
+      - name: Upload doctor output as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-doctor-output
+          path: doctor-output.txt
