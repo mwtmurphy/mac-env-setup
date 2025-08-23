@@ -656,7 +656,8 @@ configure_vscode_settings() {
     fi
     
     # Copy VS Code settings from template file
-    local template_file="$(dirname "$0")/vscode-settings-template.json"
+    local template_file
+    template_file="$(dirname "$0")/vscode-settings-template.json"
     if [ -f "$template_file" ]; then
         cp "$template_file" "$vscode_dir/settings.json"
         print_success "Applied VS Code settings from template"
