@@ -17,15 +17,13 @@ DRY_RUN=false
 PYTHON_VERSION=""
 NON_INTERACTIVE=false
 # Latest stable versions as of 2025
-declare -A PYTHON_VERSIONS=(
-    ["3.13"]="3.13.6"
-    ["3.12"]="3.12.11"
-    ["3.11"]="3.11.13"
-    ["3.10"]="3.10.18"
-    ["3.9"]="3.9.22"
-)
+PYTHON_313="3.13.6"
+PYTHON_312="3.12.11"  
+PYTHON_311="3.11.13"
+PYTHON_310="3.10.18"
+PYTHON_39="3.9.22"
 CURRENT_STEP=0
-TOTAL_STEPS=12
+TOTAL_STEPS=14
 
 # Print colored output
 print_info() {
@@ -143,22 +141,22 @@ show_help() {
 select_python_version() {
     echo
     print_info "Select Python version to install:"
-    echo "  1) Python ${PYTHON_VERSIONS["3.13"]} (recommended - active development)"
-    echo "  2) Python ${PYTHON_VERSIONS["3.12"]} (stable - security fixes only)"
-    echo "  3) Python ${PYTHON_VERSIONS["3.11"]} (stable - security fixes only)"
-    echo "  4) Python ${PYTHON_VERSIONS["3.10"]} (stable - security fixes only)"
-    echo "  5) Python ${PYTHON_VERSIONS["3.9"]} (stable - security fixes only)"
+    echo "  1) Python $PYTHON_313 (recommended - active development)"
+    echo "  2) Python $PYTHON_312 (stable - security fixes only)"
+    echo "  3) Python $PYTHON_311 (stable - security fixes only)"
+    echo "  4) Python $PYTHON_310 (stable - security fixes only)"
+    echo "  5) Python $PYTHON_39 (stable - security fixes only)"
     echo "  6) Custom version (enter manually)"
     echo
     
     while true; do
         read -r -p "Choose option [1-6]: " choice
         case $choice in
-            1) PYTHON_VERSION="${PYTHON_VERSIONS["3.13"]}"; break ;;
-            2) PYTHON_VERSION="${PYTHON_VERSIONS["3.12"]}"; break ;;
-            3) PYTHON_VERSION="${PYTHON_VERSIONS["3.11"]}"; break ;;
-            4) PYTHON_VERSION="${PYTHON_VERSIONS["3.10"]}"; break ;;
-            5) PYTHON_VERSION="${PYTHON_VERSIONS["3.9"]}"; break ;;
+            1) PYTHON_VERSION="$PYTHON_313"; break ;;
+            2) PYTHON_VERSION="$PYTHON_312"; break ;;
+            3) PYTHON_VERSION="$PYTHON_311"; break ;;
+            4) PYTHON_VERSION="$PYTHON_310"; break ;;
+            5) PYTHON_VERSION="$PYTHON_39"; break ;;
             6) 
                 read -r -p "Enter Python version (e.g., 3.11.5): " custom_version
                 if [[ -n "$custom_version" ]]; then
@@ -191,7 +189,7 @@ collect_user_info() {
         
         # Set default Python version if not specified
         if [[ -z "$PYTHON_VERSION" ]]; then
-            PYTHON_VERSION="${PYTHON_VERSIONS["3.13"]}"
+            PYTHON_VERSION="$PYTHON_313"
         fi
         
         print_info "Non-interactive mode - using provided configuration"
@@ -226,7 +224,7 @@ collect_user_info() {
         fi
         
         echo
-        if [[ "$INSTALL_WORK_TOOLS" == "false" ]] && [[ "$1" != "--no-work-tools" ]]; then
+        if [[ "$INSTALL_WORK_TOOLS" == "false" ]]; then
             read -p "Install work tools (1Password, Slack, Zoom, etc.)? [y/N]: " -n 1 -r
             echo
             if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -318,7 +316,7 @@ install_core_tools() {
     print_step "Installing core development tools"
     
     local cask_apps=("iterm2" "font-source-code-pro" "visual-studio-code")
-    local cli_tools=("zsh" "git" "hugo" "pyenv" "xz" "dockutil")
+    local cli_tools=("zsh" "git" "hugo" "pyenv" "xz" "dockutil" "node" "gh")
     
     if [[ "$DRY_RUN" == "true" ]]; then
         print_info "[DRY RUN] Would install cask applications: ${cask_apps[*]}"
@@ -345,6 +343,131 @@ install_core_tools() {
     done
     
     print_success "Core development tools installation completed"
+}
+
+# Install Claude Code CLI
+install_claude_code() {
+    print_step "Installing Claude Code CLI"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would install Claude Code CLI via npm"
+        return 0
+    fi
+    
+    if command -v claude &> /dev/null; then
+        print_success "Claude Code already installed"
+    else
+        if ! npm install -g @anthropic-ai/claude-code; then
+            print_error "Failed to install Claude Code CLI"
+            print_warning "Continuing without Claude Code. You can install it manually later with: npm install -g @anthropic-ai/claude-code"
+            return 1
+        fi
+        print_success "Claude Code CLI installed"
+    fi
+}
+
+# Configure Claude Code with templates
+configure_claude_code() {
+    print_step "Configuring Claude Code with development templates"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would create Claude Code configuration templates"
+        return 0
+    fi
+    
+    # Create user-level Claude config directory
+    mkdir -p ~/.claude
+    
+    # Create default settings.json if it doesn't exist
+    if [ ! -f ~/.claude/settings.json ]; then
+        cat > ~/.claude/settings.json << 'EOF'
+{
+  "permissions": {
+    "allowExecutableCreation": true,
+    "allowFileCreation": true,
+    "allowFileEditing": true,
+    "allowDirectoryCreation": true,
+    "allowTerminalExecution": true
+  },
+  "editor": {
+    "rulers": [70, 100],
+    "tabSize": 2,
+    "insertFinalNewline": true,
+    "trimTrailingWhitespace": true
+  },
+  "development": {
+    "enableGitIntegration": true,
+    "enableShellCompletion": true,
+    "defaultLanguage": "typescript"
+  },
+  "hooks": {
+    "onProjectOpen": "echo 'Claude Code ready for development'",
+    "beforeEdit": "echo 'Starting edit session'"
+  }
+}
+EOF
+        print_success "Created Claude Code user settings"
+    else
+        print_success "Claude Code user settings already exist"
+    fi
+    
+    # Create a project template CLAUDE.md
+    if [ ! -f ~/CLAUDE_PROJECT_TEMPLATE.md ]; then
+        cat > ~/CLAUDE_PROJECT_TEMPLATE.md << 'EOF'
+# Claude Development Guide
+
+## Project Overview
+Brief description of what this project does and its main purpose.
+
+## Code Style Guidelines
+- Use 2-space indentation for JavaScript/TypeScript
+- Use 4-space indentation for Python
+- Maximum line length: 100 characters
+- Comments should explain "why", not "what"
+
+## Architecture Patterns
+- Follow existing project structure
+- Use TypeScript for type safety
+- Implement proper error handling
+- Write unit tests for new features
+
+## Development Workflow
+1. Create feature branches from `main`
+2. Write tests first (TDD approach)
+3. Implement features with proper documentation
+4. Create pull requests for code review
+
+## Testing Strategy
+- Unit tests for all business logic
+- Integration tests for API endpoints
+- End-to-end tests for critical user flows
+
+## Deployment Notes
+- Environment-specific configurations
+- Database migration requirements
+- Any special deployment considerations
+
+## Useful Commands
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+Copy this template to your project root as `CLAUDE.md` and customize it for your specific project.
+EOF
+        print_success "Created Claude Code project template at ~/CLAUDE_PROJECT_TEMPLATE.md"
+    else
+        print_success "Claude Code project template already exists"
+    fi
 }
 
 # Install Oh My Zsh
@@ -537,7 +660,7 @@ configure_vscode_settings() {
     print_step "Configuring VS Code settings"
     
     if [[ "$DRY_RUN" == "true" ]]; then
-        print_info "[DRY RUN] Would configure VS Code with rulers, themes, and Python settings"
+        print_info "[DRY RUN] Would configure VS Code with rulers, themes, Python settings, and Claude Code optimizations"
         return 0
     fi
     
@@ -551,7 +674,7 @@ configure_vscode_settings() {
         print_info "Backed up existing VS Code settings"
     fi
     
-    # Create settings.json with common preferences
+    # Create settings.json with common preferences optimized for Claude Code
     cat > "$vscode_dir/settings.json" << EOF
 {
     "editor.rulers": [70, 100],
@@ -580,7 +703,32 @@ configure_vscode_settings() {
     "editor.minimap.enabled": true,
     "editor.lineNumbers": "on",
     "editor.renderWhitespace": "boundary",
-    "workbench.colorTheme": "Default Dark Modern"
+    "workbench.colorTheme": "Default Dark Modern",
+    "editor.codeActionsOnSave": {
+        "source.fixAll": true,
+        "source.organizeImports": true
+    },
+    "editor.suggestSelection": "first",
+    "editor.acceptSuggestionOnCommitCharacter": false,
+    "editor.acceptSuggestionOnEnter": "on",
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": true
+    },
+    "editor.parameterHints.enabled": true,
+    "editor.hover.enabled": true,
+    "editor.lightbulb.enabled": true,
+    "workbench.editor.enablePreview": false,
+    "workbench.editor.enablePreviewFromQuickOpen": false,
+    "files.associations": {
+        "CLAUDE.md": "markdown",
+        "*.claude": "markdown"
+    },
+    "markdown.validate.enabled": true,
+    "markdown.preview.breaks": true,
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.commandsToSkipShell": ["workbench.action.togglePanel"]
 }
 EOF
     
@@ -751,6 +899,8 @@ main() {
     install_xcode_tools
     install_homebrew
     install_core_tools
+    install_claude_code
+    configure_claude_code
     install_oh_my_zsh
     configure_shell
     install_core_apps

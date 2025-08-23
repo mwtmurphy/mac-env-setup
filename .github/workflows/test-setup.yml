@@ -1,0 +1,193 @@
+name: Test Mac Environment Setup
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'setup.sh'
+      - 'README.md'
+      - '.github/workflows/test-setup.yml'
+
+jobs:
+  shellcheck:
+    name: Shell Script Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: '.'
+          format: gcc
+          severity: warning
+
+  test-dry-run:
+    name: Test Setup Script (Dry Run)
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        test-scenario:
+          - name: "Default Configuration"
+            args: "--dry-run --non-interactive --name='Test User' --email='test@example.com'"
+            expected: "Claude Code CLI"
+          - name: "With Work Tools"
+            args: "--dry-run --non-interactive --name='Test User' --email='test@example.com' --work-tools"
+            expected: "1password"
+          - name: "Custom Python Version"
+            args: "--dry-run --non-interactive --name='Test User' --email='test@example.com' --python-version=3.12.11"
+            expected: "Python 3.12.11"
+          - name: "No Work Tools Explicit"
+            args: "--dry-run --non-interactive --name='Test User' --email='test@example.com' --no-work-tools"
+            expected: "Skipping work tools"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make setup script executable
+        run: chmod +x setup.sh
+
+      - name: Test ${{ matrix.test-scenario.name }}
+        id: test-run
+        run: |
+          echo "Testing scenario: ${{ matrix.test-scenario.name }}"
+          echo "Running: ./setup.sh ${{ matrix.test-scenario.args }}"
+          
+          # Capture output
+          output=$(./setup.sh ${{ matrix.test-scenario.args }} 2>&1)
+          echo "$output"
+          
+          # Save output for validation
+          echo "$output" > test-output.txt
+          
+          # Check if script completed successfully
+          if [[ $? -ne 0 ]]; then
+            echo "::error::Script failed with non-zero exit code"
+            exit 1
+          fi
+
+      - name: Validate expected content
+        run: |
+          echo "Checking for expected content: ${{ matrix.test-scenario.expected }}"
+          if ! grep -i "${{ matrix.test-scenario.expected }}" test-output.txt; then
+            echo "::error::Expected content '${{ matrix.test-scenario.expected }}' not found in output"
+            echo "Full output:"
+            cat test-output.txt
+            exit 1
+          fi
+          echo "✅ Expected content found"
+
+      - name: Validate script structure
+        run: |
+          echo "Validating script completed all steps..."
+          
+          # Check for completion message
+          if ! grep -i "setup preview completed\|automated setup completed" test-output.txt; then
+            echo "::error::Script did not complete properly"
+            exit 1
+          fi
+          
+          # Check for expected installation steps
+          expected_steps=(
+            "Installing Xcode Command Line Tools"
+            "Installing and configuring Homebrew" 
+            "Installing core development tools"
+            "Installing Claude Code CLI"
+            "Installing Oh My Zsh"
+            "Configuring shell environment"
+            "Installing core applications"
+            "Setting up Python"
+            "Configuring Git and SSH"
+            "Installing VS Code extensions"
+            "Configuring VS Code settings"
+            "Configuring dock layout"
+          )
+          
+          for step in "${expected_steps[@]}"; do
+            if ! grep -q "$step" test-output.txt; then
+              echo "::warning::Step '$step' not found in output"
+            else
+              echo "✅ Found step: $step"
+            fi
+          done
+
+      - name: Upload test output as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output-${{ matrix.test-scenario.name }}
+          path: test-output.txt
+
+  validate-documentation:
+    name: Validate Documentation Sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check README mentions Claude Code
+        run: |
+          if ! grep -q "Claude Code" README.md; then
+            echo "::error::README.md does not mention Claude Code"
+            exit 1
+          fi
+          echo "✅ README.md mentions Claude Code"
+
+      - name: Check README has authentication steps
+        run: |
+          if ! grep -q "claude login" README.md; then
+            echo "::error::README.md missing Claude Code authentication steps"
+            exit 1
+          fi
+          echo "✅ README.md includes authentication steps"
+
+      - name: Validate help text consistency
+        run: |
+          # Extract help text from script
+          help_text=$(bash -c './setup.sh --help 2>/dev/null' || echo "")
+          
+          if [[ -z "$help_text" ]]; then
+            echo "::error::Could not extract help text from script"
+            exit 1
+          fi
+          
+          echo "✅ Help text extracted successfully"
+
+  test-parameter-validation:
+    name: Test Parameter Validation
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make setup script executable
+        run: chmod +x setup.sh
+
+      - name: Test invalid email format
+        run: |
+          if ./setup.sh --non-interactive --name="Test User" --email="invalid-email" --dry-run 2>&1 | grep -q "Invalid email format"; then
+            echo "✅ Email validation working"
+          else
+            echo "::error::Email validation not working properly"
+            exit 1
+          fi
+
+      - name: Test missing required parameters
+        run: |
+          if ./setup.sh --non-interactive --dry-run 2>&1 | grep -q "requires --name and --email"; then
+            echo "✅ Parameter validation working"
+          else
+            echo "::error::Parameter validation not working properly"
+            exit 1
+          fi
+
+      - name: Test help flag
+        run: |
+          if ./setup.sh --help | grep -q "Mac Environment Setup Script"; then
+            echo "✅ Help flag working"
+          else
+            echo "::error::Help flag not working properly"
+            exit 1
+          fi
