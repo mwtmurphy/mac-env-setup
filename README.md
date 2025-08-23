@@ -59,32 +59,17 @@ npm install -g @anthropic-ai/claude-code
 mkdir -p ~/.claude
 
 # Create user settings with development-friendly defaults
-cat > ~/.claude/settings.json << 'EOF'
-{
-  "permissions": {
-    "allowExecutableCreation": true,
-    "allowFileCreation": true,
-    "allowFileEditing": true,
-    "allowDirectoryCreation": true,
-    "allowTerminalExecution": true
-  },
-  "editor": {
-    "rulers": [70, 100],
-    "tabSize": 2,
-    "insertFinalNewline": true,
-    "trimTrailingWhitespace": true
-  },
-  "development": {
-    "enableGitIntegration": true,
-    "enableShellCompletion": true,
-    "defaultLanguage": "typescript"
-  }
-}
-EOF
+# Uses template file: claude-settings-template.json
+cp claude-settings-template.json ~/.claude/settings.json
 
 # Create project template for CLAUDE.md files
-cp ~/CLAUDE_PROJECT_TEMPLATE.md ./CLAUDE.md  # Copy to each project
+cp CLAUDE_PROJECT_TEMPLATE.md ~/CLAUDE_PROJECT_TEMPLATE.md
 ```
+
+The setup script uses the included `claude-settings-template.json` file which provides:
+- Comprehensive tool permissions for development tasks
+- Proper hooks configuration for Claude Code validation
+- Python/SQL development focus matching the project template
 
 ### Zsh Plugins Installation
 ```bash
