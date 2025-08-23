@@ -22,7 +22,7 @@ The `setup.sh` script will automatically:
 - Configure Claude Code with development templates and settings
 - Configure your shell with Oh My Zsh, productivity plugins, and custom settings
 - Install essential applications via Homebrew
-- Set up Python environment with pyenv and Poetry
+- Set up Python environment with pyenv and Poetry (interactive version selection)
 - Configure Git with your name/email and generate SSH keys
 - Install VS Code extensions
 - Optionally install work tools (1Password, Slack, Zoom, etc.)
@@ -122,9 +122,33 @@ brew install --cask adobe-acrobat-reader google-chrome google-drive lastpass log
 
 ### Python Environment Setup
 ```bash
-pyenv install 3.10.12
-pyenv global 3.10.12
+# Install your selected Python version (default: 3.13.6)
+pyenv install {selected_version}
+pyenv global {selected_version}
+
+# Install Poetry package manager
 curl -sSL https://install.python-poetry.org | python3 -
+```
+
+**Available Python Versions:**
+- Python 3.13.6 (recommended - active development) 
+- Python 3.12.11 (stable - security fixes only)
+- Python 3.11.13 (stable - security fixes only) 
+- Python 3.10.18 (stable - security fixes only)
+- Python 3.9.22 (stable - security fixes only)
+- Custom version (enter manually during setup)
+
+**Python Version Selection Process:**
+During the setup, you'll be prompted to choose your preferred Python version:
+1. **Interactive Mode**: Choose from 5 predefined versions or enter a custom version
+2. **Non-Interactive Mode**: Defaults to Python 3.13.6 (recommended) unless `--python-version` is specified
+3. **Command Line Override**: Use `--python-version=X.Y.Z` to specify any version directly
+
+Examples:
+```bash
+./setup.sh --python-version=3.11.13          # Use specific version
+./setup.sh --non-interactive                 # Use default (3.13.6)
+./setup.sh                                   # Interactive selection menu
 ```
 
 ### Git and SSH Configuration
@@ -251,8 +275,10 @@ After `./setup.sh` completes successfully, you'll need to manually configure the
 **Problem**: pyenv install fails with compilation errors  
 **Solutions**:
 - Install required dependencies: `brew install openssl readline sqlite3 xz zlib`
-- Try a different Python version
+- Try a different Python version (older versions like 3.11.x often have fewer compilation issues)
+- For Apple Silicon Macs, ensure you're using compatible Python versions
 - Check [pyenv common build problems](https://github.com/pyenv/pyenv/wiki/Common-build-problems)
+- Re-run the script and select a different version from the interactive menu
 
 #### Oh My Zsh installation fails
 **Problem**: Network issues or existing zsh configuration conflicts  
