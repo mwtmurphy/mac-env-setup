@@ -383,26 +383,24 @@ configure_claude_code() {
         cat > ~/.claude/settings.json << 'EOF'
 {
   "permissions": {
-    "allowExecutableCreation": true,
-    "allowFileCreation": true,
-    "allowFileEditing": true,
-    "allowDirectoryCreation": true,
-    "allowTerminalExecution": true
-  },
-  "editor": {
-    "rulers": [70, 100],
-    "tabSize": 2,
-    "insertFinalNewline": true,
-    "trimTrailingWhitespace": true
-  },
-  "development": {
-    "enableGitIntegration": true,
-    "enableShellCompletion": true,
-    "defaultLanguage": "typescript"
+    "allow": [
+      "Bash(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Read(*)",
+      "LS(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "MultiEdit(*)",
+      "NotebookEdit(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "Task(*)",
+      "TodoWrite(*)"
+    ]
   },
   "hooks": {
-    "onProjectOpen": "echo 'Claude Code ready for development'",
-    "beforeEdit": "echo 'Starting edit session'"
+    "user-prompt-submit-hook": "echo 'Claude Code ready for development'"
   }
 }
 EOF
@@ -657,63 +655,22 @@ configure_vscode_settings() {
         print_info "Backed up existing VS Code settings"
     fi
     
-    # Create settings.json with common preferences optimized for Claude Code
-    cat > "$vscode_dir/settings.json" << EOF
+    # Copy VS Code settings from template file
+    local template_file="$(dirname "$0")/vscode-settings-template.json"
+    if [ -f "$template_file" ]; then
+        cp "$template_file" "$vscode_dir/settings.json"
+        print_success "Applied VS Code settings from template"
+    else
+        print_warning "VS Code settings template not found at $template_file, creating basic settings"
+        cat > "$vscode_dir/settings.json" << EOF
 {
     "editor.rulers": [70, 100],
-    "workbench.iconTheme": "vscode-icons",
     "editor.tabSize": 4,
-    "editor.insertSpaces": true,
-    "editor.detectIndentation": true,
-    "editor.trimAutoWhitespace": true,
-    "files.trimTrailingWhitespace": true,
-    "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true,
-    "editor.formatOnSave": true,
-    "editor.wordWrap": "bounded",
-    "editor.wordWrapColumn": 100,
-    "python.defaultInterpreterPath": "~/.pyenv/shims/python",
-    "python.terminal.activateEnvironment": true,
-    "git.enableSmartCommit": true,
-    "git.confirmSync": false,
-    "git.autofetch": true,
-    "terminal.integrated.defaultProfile.osx": "zsh",
-    "terminal.integrated.fontSize": 12,
-    "workbench.startupEditor": "welcomePage",
-    "explorer.confirmDelete": false,
-    "explorer.confirmDragAndDrop": false,
-    "markdown.preview.fontSize": 14,
-    "editor.minimap.enabled": true,
-    "editor.lineNumbers": "on",
-    "editor.renderWhitespace": "boundary",
-    "workbench.colorTheme": "Default Dark Modern",
-    "editor.codeActionsOnSave": {
-        "source.fixAll": true,
-        "source.organizeImports": true
-    },
-    "editor.suggestSelection": "first",
-    "editor.acceptSuggestionOnCommitCharacter": false,
-    "editor.acceptSuggestionOnEnter": "on",
-    "editor.quickSuggestions": {
-        "other": true,
-        "comments": false,
-        "strings": true
-    },
-    "editor.parameterHints.enabled": true,
-    "editor.hover.enabled": true,
-    "editor.lightbulb.enabled": true,
-    "workbench.editor.enablePreview": false,
-    "workbench.editor.enablePreviewFromQuickOpen": false,
-    "files.associations": {
-        "CLAUDE.md": "markdown",
-        "*.claude": "markdown"
-    },
-    "markdown.validate.enabled": true,
-    "markdown.preview.breaks": true,
-    "terminal.integrated.shellIntegration.enabled": true,
-    "terminal.integrated.commandsToSkipShell": ["workbench.action.togglePanel"]
+    "files.defaultLanguage": "python",
+    "python.defaultInterpreterPath": "~/.pyenv/shims/python"
 }
 EOF
+    fi
     
     print_success "VS Code settings configured"
 }
