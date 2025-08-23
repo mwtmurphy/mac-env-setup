@@ -109,7 +109,7 @@ alembic downgrade -1       # Rollback last migration
 
 # Claude Code automation
 claude                      # Start interactive session (no prompts with settings)
-claude --settings claude-settings-template.json  # Use specific settings file
+claude --settings templates/claude-settings-template.json  # Use specific settings file
 claude --model sonnet       # Specify model directly
 claude --permission-mode plan  # Start in plan mode
 ```
@@ -119,7 +119,7 @@ claude --permission-mode plan  # Start in plan mode
 This project provides automated Claude Code settings to eliminate interactive prompts:
 
 - **Global settings**: `~/.claude/settings.json` - System-wide configuration with permissions and model selection
-- **Template**: `claude-settings-template.json` - Base template for global user settings
+- **Template**: `templates/claude-settings-template.json` - Base template for global user settings
 
 Settings automatically configure:
 - Pre-approved permissions for development tools (git, poetry, pytest, etc.)
@@ -130,7 +130,7 @@ Settings automatically configure:
 To use the settings template globally:
 ```bash
 mkdir -p ~/.claude
-cp claude-settings-template.json ~/.claude/settings.json
+cp templates/claude-settings-template.json ~/.claude/settings.json
 ```
 
 Copy this template to your project root as `CLAUDE.md` and customize it for your specific Python/SQL project. Update the sections with your specific framework choices, database schema details, and project-specific commands.

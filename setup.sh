@@ -381,7 +381,7 @@ configure_claude_code() {
     # Create default settings.json if it doesn't exist
     if [ ! -f ~/.claude/settings.json ]; then
         local settings_template
-        settings_template="$(dirname "$0")/claude-settings-template.json"
+        settings_template="$(dirname "$0")/templates/claude-settings-template.json"
         if [ -f "$settings_template" ]; then
             cp "$settings_template" ~/.claude/settings.json
             print_success "Created Claude Code user settings from template"
@@ -676,7 +676,7 @@ configure_vscode_settings() {
     
     # Copy VS Code settings from template file
     local template_file
-    template_file="$(dirname "$0")/vscode-settings-template.json"
+    template_file="$(dirname "$0")/templates/vscode-settings-template.json"
     if [ -f "$template_file" ]; then
         cp "$template_file" "$vscode_dir/settings.json"
         print_success "Applied VS Code settings from template"

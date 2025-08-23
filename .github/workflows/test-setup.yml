@@ -6,12 +6,14 @@ on:
     paths:
       - 'setup.sh'
       - 'README.md'
+      - 'templates/**'
       - '.github/workflows/test-setup.yml'
 
 jobs:
   shellcheck:
     name: Shell Script Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,6 +28,7 @@ jobs:
   test-dry-run:
     name: Test Setup Script (Dry Run)
     runs-on: macos-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         test-scenario:
@@ -123,6 +126,7 @@ jobs:
   validate-documentation:
     name: Validate Documentation Sync
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -158,6 +162,7 @@ jobs:
   test-parameter-validation:
     name: Test Parameter Validation
     runs-on: macos-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -189,5 +194,77 @@ jobs:
             echo "✅ Help flag working"
           else
             echo "::error::Help flag not working properly"
+            exit 1
+          fi
+
+  validate-claude-setup:
+    name: Validate Claude Code Configuration
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Claude Code CLI
+        timeout-minutes: 2
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          echo "✅ Claude Code CLI installed"
+
+      - name: Verify Claude CLI installation
+        timeout-minutes: 1
+        run: |
+          if claude --version; then
+            echo "✅ Claude CLI is working"
+          else
+            echo "::error::Claude CLI installation failed"
+            exit 1
+          fi
+
+      - name: Create Claude settings directory
+        run: |
+          mkdir -p ~/.claude
+          echo "✅ Claude settings directory created"
+
+      - name: Apply Claude settings template
+        run: |
+          if [ -f "templates/claude-settings-template.json" ]; then
+            cp templates/claude-settings-template.json ~/.claude/settings.json
+            echo "✅ Applied Claude settings template"
+          else
+            echo "::error::Claude settings template not found"
+            exit 1
+          fi
+
+      - name: Validate Claude settings file
+        run: |
+          if [ -f ~/.claude/settings.json ]; then
+            echo "Validating settings file structure..."
+            # Check if it's valid JSON
+            if ! python3 -m json.tool ~/.claude/settings.json > /dev/null 2>&1; then
+              echo "::error::Invalid JSON in settings file"
+              exit 1
+            fi
+            
+            # Check for required permissions section
+            if ! grep -q '"permissions"' ~/.claude/settings.json; then
+              echo "::error::Settings file missing permissions section"
+              exit 1
+            fi
+            
+            # Check for expected permissions
+            if ! grep -q "Bash(\*)" ~/.claude/settings.json; then
+              echo "::error::Settings file missing expected Bash permissions"
+              exit 1
+            fi
+            
+            echo "✅ Claude settings file is valid and contains expected permissions"
+          else
+            echo "::error::Claude settings file was not created"
             exit 1
           fi

@@ -59,14 +59,14 @@ npm install -g @anthropic-ai/claude-code
 mkdir -p ~/.claude
 
 # Create user settings with development-friendly defaults
-# Uses template file: claude-settings-template.json
-cp claude-settings-template.json ~/.claude/settings.json
+# Uses template file: templates/claude-settings-template.json
+cp templates/claude-settings-template.json ~/.claude/settings.json
 
 # Create project template for CLAUDE.md files
 cp CLAUDE_PROJECT_TEMPLATE.md ~/CLAUDE_PROJECT_TEMPLATE.md
 ```
 
-The setup script uses the included `claude-settings-template.json` file which provides:
+The setup script uses the included `templates/claude-settings-template.json` file which provides:
 - Comprehensive tool permissions for development tasks
 - Proper hooks configuration for Claude Code validation
 - Python/SQL development focus matching the project template
