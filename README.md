@@ -20,7 +20,7 @@ The `setup.sh` script will automatically:
 - Install core development tools (iTerm2, VS Code, Git, Python, GitHub CLI, etc.)
 - Install Claude Code CLI for AI-powered development
 - Configure Claude Code with development templates and settings
-- Configure your shell with Oh My Zsh and custom settings
+- Configure your shell with Oh My Zsh, productivity plugins, and custom settings
 - Install essential applications via Homebrew
 - Set up Python environment with pyenv and Poetry
 - Configure Git with your name/email and generate SSH keys
@@ -41,7 +41,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # Install core applications
 brew install --cask iterm2 font-source-code-pro visual-studio-code
-brew install zsh git hugo pyenv xz node gh
+brew install zsh git hugo pyenv xz node gh tree
 
 # Install Oh My Zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
@@ -86,6 +86,15 @@ EOF
 cp ~/CLAUDE_PROJECT_TEMPLATE.md ./CLAUDE.md  # Copy to each project
 ```
 
+### Zsh Plugins Installation
+```bash
+# Install zsh-autosuggestions (command completion based on history)
+git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+
+# Install zsh-syntax-highlighting (real-time command syntax validation)
+git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+```
+
 ### Shell Configuration
 ```bash
 # Add to ~/.zshrc
@@ -93,6 +102,9 @@ export HOMEBREW_NO_ENV_HINTS=true
 
 # Set Oh My Zsh theme
 ZSH_THEME="essembeh"
+
+# Oh My Zsh plugins for enhanced shell experience
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 # Add pyenv initialization
 if command -v pyenv 1>/dev/null 2>&1; then

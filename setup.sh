@@ -316,7 +316,7 @@ install_core_tools() {
     print_step "Installing core development tools"
     
     local cask_apps=("iterm2" "font-source-code-pro" "visual-studio-code")
-    local cli_tools=("zsh" "git" "hugo" "pyenv" "xz" "dockutil" "node" "gh")
+    local cli_tools=("zsh" "git" "hugo" "pyenv" "xz" "dockutil" "node" "gh" "tree")
     
     if [[ "$DRY_RUN" == "true" ]]; then
         print_info "[DRY RUN] Would install cask applications: ${cask_apps[*]}"
@@ -496,7 +496,7 @@ configure_shell() {
     print_step "Configuring shell environment"
     
     if [[ "$DRY_RUN" == "true" ]]; then
-        print_info "[DRY RUN] Would configure shell with Oh My Zsh theme and environment variables"
+        print_info "[DRY RUN] Would configure shell with Oh My Zsh theme, plugins, and environment variables"
         return 0
     fi
     
@@ -504,6 +504,27 @@ configure_shell() {
     if [ -f ~/.zshrc ]; then
         cp ~/.zshrc ~/.zshrc.backup."$(date +%Y%m%d_%H%M%S)"
         print_info "Backed up existing .zshrc"
+    fi
+    
+    # Install zsh plugins
+    if [ -d ~/.oh-my-zsh ]; then
+        # Install zsh-autosuggestions
+        if [ ! -d ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions ]; then
+            git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+            print_success "Installed zsh-autosuggestions"
+        else
+            print_success "zsh-autosuggestions already installed"
+        fi
+        
+        # Install zsh-syntax-highlighting
+        if [ ! -d ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting ]; then
+            git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+            print_success "Installed zsh-syntax-highlighting"
+        else
+            print_success "zsh-syntax-highlighting already installed"
+        fi
+    else
+        print_warning "Oh My Zsh not found, skipping plugin installation"
     fi
     
     # Create/update .zshrc
@@ -514,6 +535,9 @@ export HOMEBREW_NO_ENV_HINTS=true
 
 # Oh My Zsh theme
 ZSH_THEME="essembeh"
+
+# Oh My Zsh plugins
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 # pyenv
 if command -v pyenv 1>/dev/null 2>&1; then
