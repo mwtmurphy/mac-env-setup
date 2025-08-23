@@ -25,7 +25,7 @@ declare -A PYTHON_VERSIONS=(
     ["3.9"]="3.9.22"
 )
 CURRENT_STEP=0
-TOTAL_STEPS=12
+TOTAL_STEPS=13
 
 # Print colored output
 print_info() {
@@ -318,7 +318,7 @@ install_core_tools() {
     print_step "Installing core development tools"
     
     local cask_apps=("iterm2" "font-source-code-pro" "visual-studio-code")
-    local cli_tools=("zsh" "git" "hugo" "pyenv" "xz" "dockutil")
+    local cli_tools=("zsh" "git" "hugo" "pyenv" "xz" "dockutil" "node")
     
     if [[ "$DRY_RUN" == "true" ]]; then
         print_info "[DRY RUN] Would install cask applications: ${cask_apps[*]}"
@@ -345,6 +345,27 @@ install_core_tools() {
     done
     
     print_success "Core development tools installation completed"
+}
+
+# Install Claude Code CLI
+install_claude_code() {
+    print_step "Installing Claude Code CLI"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would install Claude Code CLI via npm"
+        return 0
+    fi
+    
+    if command -v claude &> /dev/null; then
+        print_success "Claude Code already installed"
+    else
+        if ! npm install -g @anthropic-ai/claude-code; then
+            print_error "Failed to install Claude Code CLI"
+            print_warning "Continuing without Claude Code. You can install it manually later with: npm install -g @anthropic-ai/claude-code"
+            return 1
+        fi
+        print_success "Claude Code CLI installed"
+    fi
 }
 
 # Install Oh My Zsh
@@ -751,6 +772,7 @@ main() {
     install_xcode_tools
     install_homebrew
     install_core_tools
+    install_claude_code
     install_oh_my_zsh
     configure_shell
     install_core_apps

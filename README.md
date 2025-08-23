@@ -18,6 +18,7 @@ This repository contains an automated setup script for configuring a new Mac dev
 The `setup.sh` script will automatically:
 - Install Xcode Command Line Tools and Homebrew
 - Install core development tools (iTerm2, VS Code, Git, Python, etc.)
+- Install Claude Code CLI for AI-powered development
 - Configure your shell with Oh My Zsh and custom settings
 - Install essential applications via Homebrew
 - Set up Python environment with pyenv and Poetry
@@ -39,10 +40,16 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # Install core applications
 brew install --cask iterm2 font-source-code-pro visual-studio-code
-brew install zsh git hugo pyenv xz
+brew install zsh git hugo pyenv xz node
 
 # Install Oh My Zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+```
+
+### Claude Code CLI Installation
+```bash
+# Install Claude Code CLI via npm
+npm install -g @anthropic-ai/claude-code
 ```
 
 ### Shell Configuration
@@ -150,6 +157,7 @@ After `./setup.sh` completes successfully, you'll need to manually configure the
 
 ### 4. Development Setup
 - **GitHub** → Add the SSH key to your GitHub account (already copied to clipboard by the script)
+- **Claude Code** → Run `claude login` to authenticate with your Anthropic account
 - **VS Code** → Settings:
   - Set rulers at columns 70 (comments) and 100 (code)
   - Open vscode-icons extension and set as file icon theme
