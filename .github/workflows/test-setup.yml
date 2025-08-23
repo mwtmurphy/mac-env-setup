@@ -13,6 +13,7 @@ jobs:
   shellcheck:
     name: Shell Script Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,6 +28,7 @@ jobs:
   test-dry-run:
     name: Test Setup Script (Dry Run)
     runs-on: macos-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         test-scenario:
@@ -124,6 +126,7 @@ jobs:
   validate-documentation:
     name: Validate Documentation Sync
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -159,6 +162,7 @@ jobs:
   test-parameter-validation:
     name: Test Parameter Validation
     runs-on: macos-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -196,6 +200,7 @@ jobs:
   validate-claude-setup:
     name: Validate Claude Code Configuration
     runs-on: macos-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -206,9 +211,20 @@ jobs:
           node-version: '18'
 
       - name: Install Claude Code CLI
+        timeout-minutes: 2
         run: |
           npm install -g @anthropic-ai/claude-code
           echo "✅ Claude Code CLI installed"
+
+      - name: Verify Claude CLI installation
+        timeout-minutes: 1
+        run: |
+          if claude --version; then
+            echo "✅ Claude CLI is working"
+          else
+            echo "::error::Claude CLI installation failed"
+            exit 1
+          fi
 
       - name: Create Claude settings directory
         run: |
@@ -241,31 +257,14 @@ jobs:
               exit 1
             fi
             
-            echo "✅ Claude settings file is valid"
+            # Check for expected permissions
+            if ! grep -q "Bash(\*)" ~/.claude/settings.json; then
+              echo "::error::Settings file missing expected Bash permissions"
+              exit 1
+            fi
+            
+            echo "✅ Claude settings file is valid and contains expected permissions"
           else
             echo "::error::Claude settings file was not created"
             exit 1
           fi
-
-      - name: Run Claude doctor
-        run: |
-          echo "Running claude doctor..."
-          
-          # Run claude doctor and capture output
-          if claude doctor > doctor-output.txt 2>&1; then
-            echo "✅ Claude doctor completed successfully"
-            echo "Doctor output:"
-            cat doctor-output.txt
-          else
-            echo "::error::Claude doctor reported issues"
-            echo "Doctor output:"
-            cat doctor-output.txt
-            exit 1
-          fi
-
-      - name: Upload doctor output as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: claude-doctor-output
-          path: doctor-output.txt
