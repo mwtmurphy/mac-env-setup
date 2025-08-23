@@ -6,7 +6,7 @@ This repository contains an automated setup script for configuring a new Mac dev
 
 1. **Run the automated setup script:**
    ```bash
-   git clone <this-repo>
+   git clone https://github.com/mwtmurphy/mac-env-setup.git
    cd mac-env-setup
    ./setup.sh
    ```
@@ -115,47 +115,6 @@ gcloud auth application-default login
 gcloud auth application-default set-quota-project
 ```
 
-## Manual Steps (Require user interaction)
-
-### System Settings
-1. **User & Groups** > Set user image
-2. **Displays** > Night shift > Sunset to sunrise
-3. **Bluetooth** > Connect keyboard, mouse and headphones
-4. **Desktop & Dock**
-   - Position on screen > Left
-   - Minimise into application > True
-   - Automatically hide and show the dock > False
-5. **Privacy & Security** > App Management > Add iTerm for app management
-
-### iTerm2 Configuration
-1. **iTerm2** > Settings > Profiles
-   - **Text** > Set font to `Source Code Pro` size 12
-   - **Colors** > Set colour preset to `3024_night.itermcolors`
-   - **Colors** > Set cursor and cursor text colour to yellow
-
-### Application Setup and Sign-ins
-1. **Finder** > Applications > Uninstall apps which can be managed through Homebrew
-2. **Pin to dock**: VSCode, Spotify, Chrome, Obsidian (+ Notion, Slack, Zoom if installed)
-3. **Sign in to applications**:
-   - LastPass (Install Rosetta when prompted)
-   - Chrome
-   - Spotify
-   - Google Drive > Set `commonplace` folder as offline ready
-   - 1Password, Loom, Notion, Slack, Zoom (if work tools installed)
-4. **Logi+** > Setup mouse and keyboard for Mac and Chrome
-5. **Obsidian** > Load commonplace vault from Google Drive
-
-### GitHub SSH Key
-1. Add SSH key to GitHub account (key already copied to clipboard)
-
-### VS Code Settings
-1. **Settings** > Set rulers at 70 (comments) and 100 (code)
-2. Open `vscode-icons` extension and set file icon theme
-
-### Backgrounds
-1. **System Settings** > Wallpaper > Set to `mac_background.heic`
-2. **Zoom** > Settings > Background > Set to `zoom_background.png` (if Zoom installed)
-
 ---
 
 ## What to Do After Running the Setup Script
@@ -205,6 +164,75 @@ After `./setup.sh` completes successfully, you'll need to manually configure the
 
 ---
 
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### Script fails to run
+**Problem**: `./setup.sh: Permission denied`  
+**Solution**: Make the script executable with `chmod +x setup.sh`
+
+#### Homebrew installation fails
+**Problem**: Network connection issues or permission problems  
+**Solutions**:
+- Check your internet connection
+- Try running the Homebrew installation manually: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+- Ensure you have admin privileges on your Mac
+
+#### Individual app installations fail
+**Problem**: Specific brew cask installations fail  
+**Solutions**:
+- Update Homebrew: `brew update`
+- Try installing individual apps manually: `brew install --cask <app-name>`
+- Some apps might not be available in your region or have licensing restrictions
+
+#### Python installation via pyenv fails
+**Problem**: pyenv install fails with compilation errors  
+**Solutions**:
+- Install required dependencies: `brew install openssl readline sqlite3 xz zlib`
+- Try a different Python version
+- Check [pyenv common build problems](https://github.com/pyenv/pyenv/wiki/Common-build-problems)
+
+#### Oh My Zsh installation fails
+**Problem**: Network issues or existing zsh configuration conflicts  
+**Solutions**:
+- Check internet connection
+- Try manual installation: `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`
+- Remove existing `.oh-my-zsh` directory if corrupted: `rm -rf ~/.oh-my-zsh`
+
+#### SSH key not working with GitHub
+**Problem**: Git operations still prompt for password  
+**Solutions**:
+- Ensure SSH key was added to GitHub account
+- Test SSH connection: `ssh -T git@github.com`
+- Check SSH agent is running: `ssh-add -l`
+- Re-add key to SSH agent: `ssh-add ~/.ssh/id_ed25519`
+
+#### VS Code extensions fail to install
+**Problem**: Extensions don't install automatically  
+**Solutions**:
+- Install manually through VS Code Extensions marketplace
+- Check VS Code command line tool is available: `code --version`
+- Restart VS Code and try again
+
+#### Terminal settings not applied
+**Problem**: Shell configuration changes don't take effect  
+**Solutions**:
+- Restart your terminal application completely
+- Source the configuration manually: `source ~/.zshrc`
+- Check for syntax errors in `.zshrc`: `zsh -n ~/.zshrc`
+
+### Getting Help
+
+If you encounter issues not covered here:
+1. **Check the script output** - Error messages usually indicate the specific problem
+2. **Try dry-run mode** - Run `./setup.sh` and choose dry-run to preview what would be installed
+3. **Run individual steps manually** - You can execute specific brew commands or installations manually
+4. **Check system requirements** - Ensure you're running a supported version of macOS
+5. **Report issues** - Create an issue in this repository with your error messages and system details
+
+---
+
 ## Links
-[Sourabh Bajaj macOS setup](https://sourabhbajaj.com/mac-setup/) (last accessed 2023-11-28)
-[Hypermodern Python](https://cjolowicz.github.io/posts/hypermodern-python-01-setup/) (last accessed 2023-11-29)
+- [Sourabh Bajaj macOS setup](https://sourabhbajaj.com/mac-setup/) (last accessed 2023-11-28)
+- [Hypermodern Python](https://cjolowicz.github.io/posts/hypermodern-python-01-setup/) (last accessed 2023-11-29)

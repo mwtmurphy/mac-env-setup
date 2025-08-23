@@ -13,6 +13,19 @@ NC='\033[0m' # No Color
 USERNAME=""
 EMAIL=""
 INSTALL_WORK_TOOLS=false
+DRY_RUN=false
+PYTHON_VERSION=""
+NON_INTERACTIVE=false
+# Latest stable versions as of 2025
+declare -A PYTHON_VERSIONS=(
+    ["3.13"]="3.13.6"
+    ["3.12"]="3.12.11"
+    ["3.11"]="3.11.13"
+    ["3.10"]="3.10.18"
+    ["3.9"]="3.9.22"
+)
+CURRENT_STEP=0
+TOTAL_STEPS=12
 
 # Print colored output
 print_info() {
@@ -31,6 +44,12 @@ print_error() {
     echo -e "${RED}ERROR:${NC} $1"
 }
 
+# Print step progress
+print_step() {
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+    echo -e "${BLUE}[${CURRENT_STEP}/${TOTAL_STEPS}]${NC} $1"
+}
+
 # Check if running on macOS
 check_macos() {
     if [[ "$OSTYPE" != "darwin"* ]]; then
@@ -40,39 +59,218 @@ check_macos() {
     print_success "Running on macOS"
 }
 
+# Validate email format
+validate_email() {
+    local email="$1"
+    if [[ "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Parse command line arguments
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --python-version=*)
+                PYTHON_VERSION="${1#*=}"
+                shift
+                ;;
+            --work-tools)
+                INSTALL_WORK_TOOLS=true
+                shift
+                ;;
+            --no-work-tools)
+                INSTALL_WORK_TOOLS=false
+                shift
+                ;;
+            --dry-run)
+                DRY_RUN=true
+                shift
+                ;;
+            --non-interactive)
+                NON_INTERACTIVE=true
+                shift
+                ;;
+            --name=*)
+                USERNAME="${1#*=}"
+                shift
+                ;;
+            --email=*)
+                EMAIL="${1#*=}"
+                shift
+                ;;
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+}
+
+# Show help information
+show_help() {
+    echo "Mac Environment Setup Script"
+    echo
+    echo "Usage: $0 [options]"
+    echo
+    echo "Options:"
+    echo "  --python-version=VERSION    Specify Python version (e.g., 3.13.6)"
+    echo "  --work-tools                Install work tools (1Password, Slack, etc.)"
+    echo "  --no-work-tools            Skip work tools installation"
+    echo "  --dry-run                  Show what would be installed without executing"
+    echo "  --non-interactive          Use defaults, no prompts (requires --name and --email)"
+    echo "  --name=NAME                Full name for Git configuration"
+    echo "  --email=EMAIL              Email address for Git configuration"
+    echo "  -h, --help                 Show this help message"
+    echo
+    echo "Examples:"
+    echo "  $0                                    # Interactive mode"
+    echo "  $0 --dry-run                         # Preview what would be installed"
+    echo "  $0 --python-version=3.12.11         # Use specific Python version"
+    echo "  $0 --work-tools --python-version=3.13.6  # Install work tools with Python 3.13"
+    echo "  $0 --non-interactive --name=\"John Doe\" --email=\"john@example.com\" --work-tools"
+    echo
+}
+
+# Display Python version selection menu
+select_python_version() {
+    echo
+    print_info "Select Python version to install:"
+    echo "  1) Python ${PYTHON_VERSIONS["3.13"]} (recommended - active development)"
+    echo "  2) Python ${PYTHON_VERSIONS["3.12"]} (stable - security fixes only)"
+    echo "  3) Python ${PYTHON_VERSIONS["3.11"]} (stable - security fixes only)"
+    echo "  4) Python ${PYTHON_VERSIONS["3.10"]} (stable - security fixes only)"
+    echo "  5) Python ${PYTHON_VERSIONS["3.9"]} (stable - security fixes only)"
+    echo "  6) Custom version (enter manually)"
+    echo
+    
+    while true; do
+        read -r -p "Choose option [1-6]: " choice
+        case $choice in
+            1) PYTHON_VERSION="${PYTHON_VERSIONS["3.13"]}"; break ;;
+            2) PYTHON_VERSION="${PYTHON_VERSIONS["3.12"]}"; break ;;
+            3) PYTHON_VERSION="${PYTHON_VERSIONS["3.11"]}"; break ;;
+            4) PYTHON_VERSION="${PYTHON_VERSIONS["3.10"]}"; break ;;
+            5) PYTHON_VERSION="${PYTHON_VERSIONS["3.9"]}"; break ;;
+            6) 
+                read -r -p "Enter Python version (e.g., 3.11.5): " custom_version
+                if [[ -n "$custom_version" ]]; then
+                    PYTHON_VERSION="$custom_version"
+                    break
+                else
+                    print_error "Version cannot be empty"
+                fi
+                ;;
+            *) print_error "Invalid choice. Please select 1-6." ;;
+        esac
+    done
+    
+    print_success "Selected Python $PYTHON_VERSION"
+}
+
 # Collect user information
 collect_user_info() {
-    print_info "Setting up Mac environment - let's collect some information first"
-    echo
-    
-    read -r -p "Enter your full name for Git: " USERNAME
-    read -r -p "Enter your email address: " EMAIL
-    echo
-    
-    read -p "Install work tools (1Password, Slack, Zoom, etc.)? [y/N]: " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        INSTALL_WORK_TOOLS=true
+    if [[ "$NON_INTERACTIVE" == "true" ]]; then
+        # Validate required parameters for non-interactive mode
+        if [[ -z "$USERNAME" || -z "$EMAIL" ]]; then
+            print_error "Non-interactive mode requires --name and --email parameters"
+            exit 1
+        fi
+        
+        if ! validate_email "$EMAIL"; then
+            print_error "Invalid email format: $EMAIL"
+            exit 1
+        fi
+        
+        # Set default Python version if not specified
+        if [[ -z "$PYTHON_VERSION" ]]; then
+            PYTHON_VERSION="${PYTHON_VERSIONS["3.13"]}"
+        fi
+        
+        print_info "Non-interactive mode - using provided configuration"
+    else
+        print_info "Setting up Mac environment - let's collect some information first"
+        echo
+        
+        # Collect and validate name if not provided
+        while [[ -z "$USERNAME" ]]; do
+            read -r -p "Enter your full name for Git: " USERNAME
+            if [[ -z "$USERNAME" ]]; then
+                print_error "Name cannot be empty. Please try again."
+            fi
+        done
+        
+        # Collect and validate email if not provided
+        while [[ -z "$EMAIL" ]] || ! validate_email "$EMAIL"; do
+            read -r -p "Enter your email address: " EMAIL
+            if [[ -z "$EMAIL" ]]; then
+                print_error "Email cannot be empty. Please try again."
+            elif ! validate_email "$EMAIL"; then
+                print_error "Invalid email format. Please enter a valid email address."
+                EMAIL=""
+            fi
+        done
+        
+        # Python version selection if not provided
+        if [[ -z "$PYTHON_VERSION" ]]; then
+            select_python_version
+        else
+            print_info "Using specified Python version: $PYTHON_VERSION"
+        fi
+        
+        echo
+        if [[ "$INSTALL_WORK_TOOLS" == "false" ]] && [[ "$1" != "--no-work-tools" ]]; then
+            read -p "Install work tools (1Password, Slack, Zoom, etc.)? [y/N]: " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                INSTALL_WORK_TOOLS=true
+            fi
+        fi
+        
+        if [[ "$DRY_RUN" == "false" ]]; then
+            read -p "Dry run mode (show what would be installed without executing)? [y/N]: " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                DRY_RUN=true
+                print_warning "DRY RUN MODE: No actual installations will be performed"
+            fi
+        fi
+        
+        echo
+        read -p "Continue with setup? [Y/n]: " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            print_info "Setup cancelled"
+            exit 0
+        fi
     fi
     
     echo
     print_info "Configuration:"
     echo "  Name: $USERNAME"
     echo "  Email: $EMAIL"
+    echo "  Python version: $PYTHON_VERSION"
     echo "  Work tools: $INSTALL_WORK_TOOLS"
+    echo "  Dry run: $DRY_RUN"
+    echo "  Non-interactive: $NON_INTERACTIVE"
     echo
-    
-    read -p "Continue with setup? [Y/n]: " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-        print_info "Setup cancelled"
-        exit 0
-    fi
 }
 
 # Install Xcode Command Line Tools
 install_xcode_tools() {
-    print_info "Installing Xcode Command Line Tools..."
+    print_step "Installing Xcode Command Line Tools"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would install Xcode Command Line Tools"
+        return 0
+    fi
     
     if xcode-select -p &> /dev/null; then
         print_success "Xcode Command Line Tools already installed"
@@ -86,12 +284,21 @@ install_xcode_tools() {
 
 # Install and setup Homebrew
 install_homebrew() {
-    print_info "Installing Homebrew..."
+    print_step "Installing and configuring Homebrew"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would install Homebrew package manager"
+        return 0
+    fi
     
     if command -v brew &> /dev/null; then
         print_success "Homebrew already installed"
     else
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+        print_info "Downloading and installing Homebrew..."
+        if ! /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"; then
+            print_error "Failed to install Homebrew. Please check your internet connection and try again."
+            exit 1
+        fi
         
         # Add Homebrew to PATH for Apple Silicon Macs
         if [[ $(uname -m) == "arm64" ]]; then
@@ -108,30 +315,67 @@ install_homebrew() {
 
 # Install core development tools
 install_core_tools() {
-    print_info "Installing core development tools..."
+    print_step "Installing core development tools"
     
-    # Install applications
-    brew install --cask iterm2 font-source-code-pro visual-studio-code
-    brew install zsh git hugo pyenv xz
+    local cask_apps=("iterm2" "font-source-code-pro" "visual-studio-code")
+    local cli_tools=("zsh" "git" "hugo" "pyenv" "xz" "dockutil")
     
-    print_success "Core development tools installed"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would install cask applications: ${cask_apps[*]}"
+        print_info "[DRY RUN] Would install CLI tools: ${cli_tools[*]}"
+        return 0
+    fi
+    
+    # Install cask applications
+    for app in "${cask_apps[@]}"; do
+        if ! brew install --cask "$app"; then
+            print_warning "Failed to install $app, continuing with other applications..."
+        else
+            print_success "Installed $app"
+        fi
+    done
+    
+    # Install command line tools
+    for tool in "${cli_tools[@]}"; do
+        if ! brew install "$tool"; then
+            print_warning "Failed to install $tool, continuing with other tools..."
+        else
+            print_success "Installed $tool"
+        fi
+    done
+    
+    print_success "Core development tools installation completed"
 }
 
 # Install Oh My Zsh
 install_oh_my_zsh() {
-    print_info "Installing Oh My Zsh..."
+    print_step "Installing Oh My Zsh shell framework"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would install Oh My Zsh shell framework"
+        return 0
+    fi
     
     if [ -d "$HOME/.oh-my-zsh" ]; then
         print_success "Oh My Zsh already installed"
     else
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" "" --unattended
+        if ! sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" "" --unattended; then
+            print_error "Failed to install Oh My Zsh. Please check your internet connection."
+            print_warning "Continuing without Oh My Zsh installation..."
+            return 1
+        fi
         print_success "Oh My Zsh installed"
     fi
 }
 
 # Configure shell
 configure_shell() {
-    print_info "Configuring shell..."
+    print_step "Configuring shell environment"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would configure shell with Oh My Zsh theme and environment variables"
+        return 0
+    fi
     
     # Backup existing .zshrc if it exists
     if [ -f ~/.zshrc ]; then
@@ -162,39 +406,81 @@ EOF
 
 # Install core applications
 install_core_apps() {
-    print_info "Installing core applications..."
+    print_step "Installing core applications"
     
-    brew install --cask adobe-acrobat-reader google-chrome google-drive lastpass logi-options-plus obsidian spotify
+    local core_apps=("adobe-acrobat-reader" "google-chrome" "google-drive" "lastpass" "logi-options-plus" "obsidian" "spotify")
+    local failed_apps=()
     
-    print_success "Core applications installed"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would install core applications: ${core_apps[*]}"
+        return 0
+    fi
+    
+    for app in "${core_apps[@]}"; do
+        if ! brew install --cask "$app"; then
+            print_warning "Failed to install $app"
+            failed_apps+=("$app")
+        else
+            print_success "Installed $app"
+        fi
+    done
+    
+    if [ ${#failed_apps[@]} -eq 0 ]; then
+        print_success "All core applications installed successfully"
+    else
+        print_warning "Some applications failed to install: ${failed_apps[*]}"
+        print_info "You can try installing them manually later with: brew install --cask <app-name>"
+    fi
 }
 
 # Setup Python environment
 setup_python() {
-    print_info "Setting up Python environment..."
+    print_step "Setting up Python $PYTHON_VERSION environment"
     
-    # Install Python 3.10.12
-    if pyenv versions | grep -q "3.10.12"; then
-        print_success "Python 3.10.12 already installed"
-    else
-        pyenv install 3.10.12
-        print_success "Python 3.10.12 installed"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would install Python $PYTHON_VERSION via pyenv"
+        print_info "[DRY RUN] Would install Poetry package manager"
+        return 0
     fi
     
-    pyenv global 3.10.12
+    # Install specified Python version
+    if pyenv versions | grep -q "$PYTHON_VERSION"; then
+        print_success "Python $PYTHON_VERSION already installed"
+    else
+        if ! pyenv install "$PYTHON_VERSION"; then
+            print_error "Failed to install Python $PYTHON_VERSION"
+            print_warning "Continuing without Python setup. You may need to install Python manually."
+            return 1
+        fi
+        print_success "Python $PYTHON_VERSION installed"
+    fi
+    
+    if ! pyenv global "$PYTHON_VERSION"; then
+        print_warning "Failed to set Python $PYTHON_VERSION as global version"
+    fi
     
     # Install Poetry
     if command -v poetry &> /dev/null; then
         print_success "Poetry already installed"
     else
-        curl -sSL https://install.python-poetry.org | python3 -
+        if ! curl -sSL https://install.python-poetry.org | python3 -; then
+            print_error "Failed to install Poetry"
+            print_warning "Continuing without Poetry. You can install it manually later."
+            return 1
+        fi
         print_success "Poetry installed"
     fi
 }
 
 # Configure Git and SSH
 configure_git_ssh() {
-    print_info "Configuring Git and SSH..."
+    print_step "Configuring Git and SSH keys"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would configure Git with name: $USERNAME, email: $EMAIL"
+        print_info "[DRY RUN] Would generate SSH key for GitHub authentication"
+        return 0
+    fi
     
     # Configure Git
     git config --global user.name "$USERNAME"
@@ -230,7 +516,12 @@ EOF
 
 # Install VS Code extensions
 install_vscode_extensions() {
-    print_info "Installing VS Code extensions..."
+    print_step "Installing VS Code extensions"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would install VS Code extensions: Python, GitHub, Markdown, Icons, Cloud Code"
+        return 0
+    fi
     
     code --install-extension ms-python.python
     code --install-extension GitHub.vscode-pull-request-github
@@ -241,14 +532,84 @@ install_vscode_extensions() {
     print_success "VS Code extensions installed"
 }
 
+# Configure VS Code settings
+configure_vscode_settings() {
+    print_step "Configuring VS Code settings"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would configure VS Code with rulers, themes, and Python settings"
+        return 0
+    fi
+    
+    # Create VS Code user settings directory
+    local vscode_dir="$HOME/Library/Application Support/Code/User"
+    mkdir -p "$vscode_dir"
+    
+    # Backup existing settings if they exist
+    if [ -f "$vscode_dir/settings.json" ]; then
+        cp "$vscode_dir/settings.json" "$vscode_dir/settings.json.backup.$(date +%Y%m%d_%H%M%S)"
+        print_info "Backed up existing VS Code settings"
+    fi
+    
+    # Create settings.json with common preferences
+    cat > "$vscode_dir/settings.json" << EOF
+{
+    "editor.rulers": [70, 100],
+    "workbench.iconTheme": "vscode-icons",
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": true,
+    "editor.trimAutoWhitespace": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "editor.formatOnSave": true,
+    "editor.wordWrap": "bounded",
+    "editor.wordWrapColumn": 100,
+    "python.defaultInterpreterPath": "~/.pyenv/shims/python",
+    "python.terminal.activateEnvironment": true,
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+    "git.autofetch": true,
+    "terminal.integrated.defaultProfile.osx": "zsh",
+    "terminal.integrated.fontSize": 12,
+    "workbench.startupEditor": "welcomePage",
+    "explorer.confirmDelete": false,
+    "explorer.confirmDragAndDrop": false,
+    "markdown.preview.fontSize": 14,
+    "editor.minimap.enabled": true,
+    "editor.lineNumbers": "on",
+    "editor.renderWhitespace": "boundary",
+    "workbench.colorTheme": "Default Dark Modern"
+}
+EOF
+    
+    print_success "VS Code settings configured"
+}
+
 # Install work tools (optional)
 install_work_tools() {
     if [ "$INSTALL_WORK_TOOLS" = true ]; then
-        print_info "Installing work tools..."
+        print_step "Installing work tools"
         
-        brew install --cask 1password google-cloud-sdk loom notion slack zoom
+        local work_apps=("1password" "google-cloud-sdk" "loom" "notion" "slack" "zoom")
+        local failed_work_apps=()
         
-        # Add Google Cloud SDK to shell
+        if [[ "$DRY_RUN" == "true" ]]; then
+            print_info "[DRY RUN] Would install work applications: ${work_apps[*]}"
+            return 0
+        fi
+        
+        for app in "${work_apps[@]}"; do
+            if ! brew install --cask "$app"; then
+                print_warning "Failed to install $app"
+                failed_work_apps+=("$app")
+            else
+                print_success "Installed $app"
+            fi
+        done
+        
+        # Add Google Cloud SDK to shell if it was installed successfully
         if [ -f "$(brew --prefix)/share/google-cloud-sdk/path.zsh.inc" ]; then
             cat >> ~/.zshrc << 'EOF'
 
@@ -256,17 +617,81 @@ install_work_tools() {
 source "$(brew --prefix)/share/google-cloud-sdk/path.zsh.inc"
 source "$(brew --prefix)/share/google-cloud-sdk/completion.zsh.inc"
 EOF
+            print_success "Google Cloud SDK added to shell configuration"
         fi
         
-        print_success "Work tools installed"
+        if [ ${#failed_work_apps[@]} -eq 0 ]; then
+            print_success "All work tools installed successfully"
+        else
+            print_warning "Some work tools failed to install: ${failed_work_apps[*]}"
+            print_info "You can try installing them manually later with: brew install --cask <app-name>"
+        fi
+        
         print_warning "Run 'gcloud auth application-default login' after setup to authenticate Google Cloud"
     else
-        print_info "Skipping work tools installation"
+        print_step "Skipping work tools installation"
     fi
+}
+
+# Configure dock with dockutil
+configure_dock() {
+    print_step "Configuring dock layout"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Would configure dock with pinned applications"
+        return 0
+    fi
+    
+    if ! command -v dockutil &> /dev/null; then
+        print_warning "dockutil not found, skipping dock configuration"
+        return 1
+    fi
+    
+    # Remove default dock items that aren't needed
+    local default_apps=("Launchpad" "Safari" "Mail" "FaceTime" "Messages" "Maps" "Photos" "Contacts" "Calendar" "Reminders" "Notes" "Freeform" "TV" "Music" "Podcasts" "News" "App Store")
+    
+    for app in "${default_apps[@]}"; do
+        if dockutil --list | grep -q "$app"; then
+            dockutil --remove "$app" --no-restart 2>/dev/null || true
+        fi
+    done
+    
+    # Add our preferred applications in order
+    local dock_apps=("Visual Studio Code" "Google Chrome" "Spotify" "Obsidian")
+    
+    # Add work tools to dock if they were installed
+    if [ "$INSTALL_WORK_TOOLS" = true ]; then
+        dock_apps+=("Slack" "Zoom" "Notion")
+    fi
+    
+    # Remove existing instances and add in correct order
+    for app in "${dock_apps[@]}"; do
+        # Remove if it exists
+        dockutil --remove "$app" --no-restart 2>/dev/null || true
+        
+        # Add to dock if application exists
+        local app_path="/Applications/${app}.app"
+        if [ -d "$app_path" ]; then
+            dockutil --add "$app_path" --no-restart 2>/dev/null || print_warning "Could not add $app to dock"
+        fi
+    done
+    
+    # Restart dock to apply changes
+    killall Dock 2>/dev/null || true
+    
+    print_success "Dock configured with pinned applications"
 }
 
 # Display manual setup reminders
 show_manual_steps() {
+    print_step "Displaying manual setup instructions"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_info "[DRY RUN] Setup preview completed!"
+        print_warning "Run the script without dry-run mode to perform actual installations"
+        return 0
+    fi
+    
     print_info "Setup complete! Here are the manual steps you still need to do:"
     echo
     echo "System Settings:"
@@ -282,10 +707,7 @@ show_manual_steps() {
     echo "• Settings > Profiles > Colors > Cursor colors: Yellow"
     echo
     echo "Application Setup:"
-    echo "• Pin to dock: VSCode, Spotify, Chrome, Obsidian"
-    if [ "$INSTALL_WORK_TOOLS" = true ]; then
-        echo "• Pin to dock: Notion, Slack, Zoom"
-    fi
+    echo "• Dock has been automatically configured with essential applications"
     echo "• Sign in to: LastPass, Chrome, Spotify, Google Drive"
     if [ "$INSTALL_WORK_TOOLS" = true ]; then
         echo "• Sign in to: 1Password, Loom, Notion, Slack, Zoom"
@@ -295,8 +717,7 @@ show_manual_steps() {
     echo
     echo "Development:"
     echo "• Add SSH key to GitHub account (already copied to clipboard)"
-    echo "• VS Code > Settings > Rulers at 70 and 100"
-    echo "• VS Code > Set vscode-icons as file icon theme"
+    echo "• VS Code has been automatically configured with rulers, themes, and settings"
     if [ "$INSTALL_WORK_TOOLS" = true ]; then
         echo "• Run: gcloud auth application-default login"
     fi
@@ -312,6 +733,9 @@ show_manual_steps() {
 
 # Main execution
 main() {
+    # Parse command line arguments first
+    parse_arguments "$@"
+    
     echo "============================================"
     echo "     Mac Environment Setup Script"
     echo "============================================"
@@ -333,7 +757,9 @@ main() {
     setup_python
     configure_git_ssh
     install_vscode_extensions
+    configure_vscode_settings
     install_work_tools
+    configure_dock
     
     echo
     print_success "Automated setup completed!"
@@ -343,4 +769,4 @@ main() {
 }
 
 # Run the script
-main
+main "$@"
