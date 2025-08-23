@@ -380,7 +380,14 @@ configure_claude_code() {
     
     # Create default settings.json if it doesn't exist
     if [ ! -f ~/.claude/settings.json ]; then
-        cat > ~/.claude/settings.json << 'EOF'
+        local settings_template
+        settings_template="$(dirname "$0")/claude-settings-template.json"
+        if [ -f "$settings_template" ]; then
+            cp "$settings_template" ~/.claude/settings.json
+            print_success "Created Claude Code user settings from template"
+        else
+            print_warning "Claude settings template not found at $settings_template, creating basic settings"
+            cat > ~/.claude/settings.json << 'EOF'
 {
   "permissions": {
     "allow": [
@@ -400,10 +407,22 @@ configure_claude_code() {
     ]
   },
   "hooks": {
-    "user-prompt-submit-hook": "echo 'Claude Code ready for development'"
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Claude Code ready for development'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }
 EOF
+        fi
         print_success "Created Claude Code user settings"
     else
         print_success "Claude Code user settings already exist"
