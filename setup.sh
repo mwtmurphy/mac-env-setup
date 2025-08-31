@@ -300,9 +300,11 @@ install_homebrew() {
         
         # Add Homebrew to PATH for Apple Silicon Macs
         if [[ $(uname -m) == "arm64" ]]; then
+            # shellcheck disable=SC2016
             (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> ~/.zprofile
             eval "$(/opt/homebrew/bin/brew shellenv)"
         else
+            # shellcheck disable=SC2016
             (echo; echo 'eval "$(/usr/local/bin/brew shellenv)"') >> ~/.zprofile
             eval "$(/usr/local/bin/brew shellenv)"
         fi
@@ -582,16 +584,56 @@ setup_python() {
         print_warning "Failed to set Python $PYTHON_VERSION as global version"
     fi
     
-    # Install Poetry
+    # Install Poetry with retry mechanism
     if command -v poetry &> /dev/null; then
         print_success "Poetry already installed"
     else
-        if ! curl -sSL https://install.python-poetry.org | python3 -; then
-            print_error "Failed to install Poetry"
-            print_warning "Continuing without Poetry. You can install it manually later."
+        local max_attempts=3
+        local attempt=1
+        local success="false"
+        
+        print_info "Installing Poetry package manager..."
+        
+        while [ "$attempt" -le "$max_attempts" ] && [ "$success" != "true" ]; do
+            if [ "$attempt" -gt 1 ]; then
+                local delay
+                delay=$((attempt * 5))
+                print_info "Retry attempt $attempt/$max_attempts after ${delay}s delay..."
+                sleep "$delay"
+            fi
+            
+            print_info "Attempting Poetry installation (attempt $attempt/$max_attempts)..."
+            if curl -sSL --connect-timeout 30 --max-time 300 https://install.python-poetry.org | python3 -; then
+                success="true"
+            else
+                print_warning "Poetry installation attempt $attempt failed"
+                attempt=$((attempt + 1))
+            fi
+        done
+        
+        if [ "$success" != "true" ]; then
+            print_error "Failed to install Poetry after $max_attempts attempts"
+            print_warning "This may be due to network connectivity issues."
+            print_info "You can install Poetry manually later with:"
+            print_info "  curl -sSL https://install.python-poetry.org | python3 -"
+            print_info "  export PATH=\"\$HOME/.local/bin:\$PATH\""
             return 1
         fi
-        print_success "Poetry installed"
+        
+        # Update PATH for current session
+        export PATH="$HOME/.local/bin:$PATH"
+        
+        # Verify Poetry installation
+        if command -v poetry &> /dev/null && poetry --version &> /dev/null; then
+            local poetry_version
+            poetry_version="$(poetry --version)"
+            print_success "Poetry installed and verified ($poetry_version)"
+        else
+            print_error "Poetry installation completed but verification failed"
+            print_info "Try restarting your terminal or manually add to PATH:"
+            print_info "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+            return 1
+        fi
     fi
 }
 

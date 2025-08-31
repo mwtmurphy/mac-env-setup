@@ -84,6 +84,11 @@ poetry add package-name     # Add new dependency
 poetry add --group dev package-name  # Add dev dependency
 poetry shell               # Activate virtual environment
 
+# Poetry installation troubleshooting
+curl -sSL https://install.python-poetry.org | python3 -  # Manual install if setup fails
+export PATH="$HOME/.local/bin:$PATH"    # Add Poetry to PATH
+poetry --version            # Verify installation works
+
 # Testing
 pytest                     # Run all tests
 pytest -v                  # Verbose test output
