@@ -81,7 +81,8 @@ mock_curl_intermittent() {
 
 # Test 1: Validate setup.sh exists and is executable
 test_setup_script_exists() {
-    local script_path="$(dirname "$0")/../setup.sh"
+    local script_path
+    script_path="$(dirname "$0")/../setup.sh"
     
     if [ ! -f "$script_path" ]; then
         echo "setup.sh not found at $script_path"
@@ -98,7 +99,8 @@ test_setup_script_exists() {
 
 # Test 2: Test dry-run mode works without errors
 test_dry_run_mode() {
-    local script_path="$(dirname "$0")/../setup.sh"
+    local script_path
+    script_path="$(dirname "$0")/../setup.sh"
     
     # Test dry-run with non-interactive mode
     if "$script_path" --dry-run --non-interactive --name="Test User" --email="test@example.com" --python-version=3.12.11 >/dev/null 2>&1; then
@@ -111,7 +113,8 @@ test_dry_run_mode() {
 
 # Test 3: Test argument parsing
 test_argument_parsing() {
-    local script_path="$(dirname "$0")/../setup.sh"
+    local script_path
+    script_path="$(dirname "$0")/../setup.sh"
     
     # Test help option
     if "$script_path" --help >/dev/null 2>&1; then
@@ -124,7 +127,8 @@ test_argument_parsing() {
 
 # Test 4: Test Python version validation
 test_python_version_validation() {
-    local script_path="$(dirname "$0")/../setup.sh"
+    local script_path
+    script_path="$(dirname "$0")/../setup.sh"
     
     # Test with valid Python version
     if "$script_path" --dry-run --non-interactive --name="Test User" --email="test@example.com" --python-version=3.12.11 >/dev/null 2>&1; then
@@ -138,13 +142,15 @@ test_python_version_validation() {
 # Test 5: Test email validation function
 test_email_validation() {
     # Source the setup script to access validation functions
-    local script_path="$(dirname "$0")/../setup.sh"
+    local script_path
+    script_path="$(dirname "$0")/../setup.sh"
     
     # Extract and test email validation logic
-    local valid_emails=("test@example.com" "user.name+tag@example.co.uk" "test123@test-domain.com")
-    local invalid_emails=("invalid-email" "test@" "@example.com" "test.example.com")
+    local -a valid_emails=("test@example.com" "user.name+tag@example.co.uk" "test123@test-domain.com")
+    local -a invalid_emails=("invalid-email" "test@" "@example.com" "test.example.com")
     
     # This is a simplified test - in a real scenario, we'd extract the function
+    local email
     for email in "${valid_emails[@]}"; do
         if [[ ! "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             echo "Valid email '$email' failed validation"
@@ -244,11 +250,13 @@ test_path_configuration() {
 
 # Test 8: Integration test - check script structure
 test_script_structure() {
-    local script_path="$(dirname "$0")/../setup.sh"
+    local script_path
+    script_path="$(dirname "$0")/../setup.sh"
     
     # Check for required functions
-    local required_functions=("setup_python" "install_homebrew" "configure_git_ssh" "main")
+    local -a required_functions=("setup_python" "install_homebrew" "configure_git_ssh" "main")
     
+    local func
     for func in "${required_functions[@]}"; do
         if ! grep -q "^${func}()" "$script_path"; then
             echo "Required function '$func' not found"

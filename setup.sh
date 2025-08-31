@@ -588,27 +588,28 @@ setup_python() {
     else
         local max_attempts=3
         local attempt=1
-        local success=false
+        local success="false"
         
         print_info "Installing Poetry package manager..."
         
-        while [ $attempt -le $max_attempts ] && [ "$success" = false ]; do
-            if [ $attempt -gt 1 ]; then
-                local delay=$((attempt * 5))
+        while [ "$attempt" -le "$max_attempts" ] && [ "$success" != "true" ]; do
+            if [ "$attempt" -gt 1 ]; then
+                local delay
+                delay=$((attempt * 5))
                 print_info "Retry attempt $attempt/$max_attempts after ${delay}s delay..."
-                sleep $delay
+                sleep "$delay"
             fi
             
             print_info "Attempting Poetry installation (attempt $attempt/$max_attempts)..."
             if curl -sSL --connect-timeout 30 --max-time 300 https://install.python-poetry.org | python3 -; then
-                success=true
+                success="true"
             else
                 print_warning "Poetry installation attempt $attempt failed"
                 attempt=$((attempt + 1))
             fi
         done
         
-        if [ "$success" = false ]; then
+        if [ "$success" != "true" ]; then
             print_error "Failed to install Poetry after $max_attempts attempts"
             print_warning "This may be due to network connectivity issues."
             print_info "You can install Poetry manually later with:"
@@ -622,7 +623,9 @@ setup_python() {
         
         # Verify Poetry installation
         if command -v poetry &> /dev/null && poetry --version &> /dev/null; then
-            print_success "Poetry installed and verified ($(poetry --version))"
+            local poetry_version
+            poetry_version="$(poetry --version)"
+            print_success "Poetry installed and verified ($poetry_version)"
         else
             print_error "Poetry installation completed but verification failed"
             print_info "Try restarting your terminal or manually add to PATH:"
