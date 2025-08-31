@@ -300,9 +300,11 @@ install_homebrew() {
         
         # Add Homebrew to PATH for Apple Silicon Macs
         if [[ $(uname -m) == "arm64" ]]; then
+            # shellcheck disable=SC2016
             (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> ~/.zprofile
             eval "$(/opt/homebrew/bin/brew shellenv)"
         else
+            # shellcheck disable=SC2016
             (echo; echo 'eval "$(/usr/local/bin/brew shellenv)"') >> ~/.zprofile
             eval "$(/usr/local/bin/brew shellenv)"
         fi

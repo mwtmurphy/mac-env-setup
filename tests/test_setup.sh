@@ -66,7 +66,8 @@ mock_curl_intermittent() {
         echo "1" > "$attempt_file"
         return 1  # First attempt fails
     else
-        local attempt=$(cat "$attempt_file")
+        local attempt
+        attempt=$(cat "$attempt_file")
         if [ "$attempt" -lt 2 ]; then
             echo $((attempt + 1)) > "$attempt_file"
             return 1  # Second attempt fails
@@ -237,7 +238,7 @@ EOF
 # Test 7: Test PATH configuration
 test_path_configuration() {
     # Test that PATH export syntax is correct
-    local test_path_export='export PATH="$HOME/.local/bin:$PATH"'
+    local test_path_export="export PATH=\"\$HOME/.local/bin:\$PATH\""
     
     # Validate the export statement syntax
     if echo "$test_path_export" | bash -n; then
@@ -320,8 +321,6 @@ EOF
 # Test 10: Test curl timeout parameters
 test_curl_timeout_params() {
     # Test that curl timeout parameters are valid
-    local curl_command="curl -sSL --connect-timeout 30 --max-time 300 https://example.com"
-    
     # Validate curl command syntax (dry run)
     if curl --connect-timeout 30 --max-time 300 --help >/dev/null 2>&1; then
         return 0
