@@ -111,8 +111,11 @@ brew install --cask adobe-acrobat-reader google-chrome google-drive lastpass log
 pyenv install {selected_version}
 pyenv global {selected_version}
 
-# Install Poetry package manager
-curl -sSL https://install.python-poetry.org | python3 -
+# Install Poetry package manager with retry mechanism
+# The script automatically retries up to 3 times with exponential backoff
+curl -sSL --connect-timeout 30 --max-time 300 https://install.python-poetry.org | python3 -
+export PATH="$HOME/.local/bin:$PATH"  # Update PATH for current session
+poetry --version  # Verify installation
 ```
 
 **Available Python Versions:**
@@ -264,6 +267,29 @@ After `./setup.sh` completes successfully, you'll need to manually configure the
 - For Apple Silicon Macs, ensure you're using compatible Python versions
 - Check [pyenv common build problems](https://github.com/pyenv/pyenv/wiki/Common-build-problems)
 - Re-run the script and select a different version from the interactive menu
+
+#### Poetry installation fails
+**Problem**: Poetry installation fails during setup or times out  
+**Solutions**:
+- The script automatically retries 3 times with increasing delays (5s, 10s, 15s)
+- Check your internet connection and try again
+- Verify you can reach https://install.python-poetry.org in your browser
+- For corporate networks, check if proxy settings are required:
+  ```bash
+  export https_proxy=your_proxy_url
+  export http_proxy=your_proxy_url
+  ```
+- Manual installation if script continues to fail:
+  ```bash
+  curl -sSL https://install.python-poetry.org | python3 -
+  export PATH="$HOME/.local/bin:$PATH"
+  poetry --version  # Verify installation
+  ```
+- If PATH issues persist, add to your shell configuration:
+  ```bash
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+  source ~/.zshrc
+  ```
 
 #### Oh My Zsh installation fails
 **Problem**: Network issues or existing zsh configuration conflicts  
