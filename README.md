@@ -186,23 +186,7 @@ gcloud auth application-default set-quota-project
 
 After `./setup.sh` completes successfully, you'll need to manually configure the following:
 
-### 1. System Settings
-- **User & Groups** → Set your user profile image
-- **Displays** → Night Shift → Set to "Sunset to Sunrise"
-- **Bluetooth** → Connect your keyboard, mouse, and headphones
-- **Desktop & Dock** → Configure:
-  - Position on screen: Left
-  - Minimize windows into application icon: Enable
-  - Automatically hide and show the Dock: Disable
-- **Privacy & Security** → App Management → Add iTerm2 for app management permissions
-
-### 2. iTerm2 Configuration
-- Open **iTerm2** → Preferences → Profiles → Default
-- **Text** tab → Set font to "Source Code Pro", size 12
-- **Colors** tab → Import and select `3024_night.itermcolors` color preset
-- **Colors** tab → Set cursor and cursor text colors to yellow
-
-### 3. Application Setup
+### 1. Application Setup
 - **Pin to Dock**: VS Code, Spotify, Chrome, Obsidian (+ Notion, Slack, Zoom if work tools installed)
 - **Sign in** to all applications:
   - LastPass (install Rosetta 2 if prompted)
@@ -213,24 +197,43 @@ After `./setup.sh` completes successfully, you'll need to manually configure the
 - **Logitech Options+** → Configure mouse and keyboard settings for Mac and Chrome
 - **Obsidian** → Load your commonplace vault from Google Drive
 
+### 2. System Settings
+- **User & Groups** → Set your user profile image
+- **Displays** → Night Shift → Set to "Sunset to Sunrise"
+- **Bluetooth** → Connect your keyboard, mouse, and headphones
+- **Desktop & Dock** → Configure:
+  - Position on screen: Left
+  - Minimize windows into application icon: Enable
+  - Automatically hide and show the Dock: Disable
+- **Privacy & Security** → App Management → Add iTerm2 for app management permissions
+
+### 3. iTerm2 Configuration
+- Open **iTerm2** → Preferences → Profiles → Default
+- **Text** tab → Set font to "Source Code Pro", size 12
+- **Colors** tab → Import and select `3024_night.itermcolors` color preset
+- **Colors** tab → Set cursor and cursor text colors to yellow
+
 ### 4. Development Setup
-- **GitHub** → Add the SSH key to your GitHub account (already copied to clipboard by the script)
+- **GitHub** → Add the SSH key to your GitHub account:
+  - The setup script automatically copies your SSH key to the clipboard
+  - If clipboard method failed, manually copy with: `pbcopy < ~/.ssh/id_ed25519.pub`
+  - Go to GitHub → Settings → SSH and GPG keys → New SSH key
+  - Paste the key and give it a descriptive title
+  - Test connection: `ssh -T git@github.com`
 - **Claude Code** → Complete authentication and GitHub integration:
   - Run `claude login` to authenticate with your Anthropic account
   - For GitHub integration: `claude /install-github-app` (optional but recommended)
   - This enables Claude to respond to @mentions in GitHub PRs and issues
   - Configure repository secrets with your Anthropic API key if using GitHub Actions
   - Copy `~/CLAUDE_PROJECT_TEMPLATE.md` to your project root as `CLAUDE.md` and customize
-- **VS Code** → Enhanced for Claude Code development:
-  - Settings automatically configured with Claude Code optimizations
-  - File associations set up for CLAUDE.md files
-  - Enhanced IntelliSense and code actions enabled
-  - Shell integration configured for better terminal experience
+- **VS Code** → Automatically configured by the setup script with Claude Code optimizations and development settings
 - **Google Cloud** (if work tools installed) → Run: `gcloud auth application-default login`
 
 ### 5. Optional Customization
-- **Wallpaper** → Set desktop background to `mac_background.heic`
-- **Zoom Background** → Set virtual background to `zoom_background.png` (if Zoom installed)
+- **Wallpaper** → Set desktop background to `mac_dynamic_background.heic`
+- **Video Call Backgrounds** → Set virtual background to `video_call_background.png`:
+  - **Zoom** → Settings → Background & Effects → Virtual Backgrounds → Add Image
+  - **Google Meet** → Settings → Video → Background → Upload Image
 
 ### 6. Final Step
 **Restart your terminal** to ensure all shell configuration changes take effect.
